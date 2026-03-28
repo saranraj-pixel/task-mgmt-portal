@@ -1,11 +1,12 @@
 const User = require("../models/user");
+const jwt = require("jsonwebtoken");
 
 // @desc Register User
 // @route POST /api/auth/register
 // @access Public
 exports.registerUser = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password, role} = req.body;
 
     // ✅ Validate input
     if (!name) {
@@ -39,7 +40,7 @@ exports.registerUser = async (req, res) => {
     }
 
     // ✅ Create user
-    const user = await User.create({ name, email, password });
+    const user = await User.create({ name, email, password, role });
 
     // ✅ Response (NO PASSWORD)
     return res.status(201).json({
@@ -49,6 +50,7 @@ exports.registerUser = async (req, res) => {
         id: user._id,
         name: user.name,
         email: user.email,
+        role: user.role
       },
     });
   } catch (error) {
@@ -82,7 +84,7 @@ exports.loginUser = async (req, res) => {
       });
     }
 
-    // ✅ Include password explicitly
+    // ✅ Get user with password
     const user = await User.findOne({ email }).select("+password");
 
     if (!user) {
@@ -92,7 +94,7 @@ exports.loginUser = async (req, res) => {
       });
     }
 
-    // ✅ Compare
+    // ✅ Compare password
     const isMatch = await user.comparePassword(password);
 
     if (!isMatch) {
@@ -102,11 +104,21 @@ exports.loginUser = async (req, res) => {
       });
     }
 
+    // ✅ Generate JWT
+    const token = jwt.sign(
+      { userId: user._id, role: user.role || "user" }, // role optional
+      process.env.JWT_SECRET,
+      { expiresIn: process.env.JWT_EXPIRES_IN }
+    );
+
+    // ✅ Response
     return res.status(200).json({
       success: true,
       message: "Login successful",
+      token,
       data: user.getProfile(),
     });
+
   } catch (error) {
     return res.status(500).json({
       success: false,
