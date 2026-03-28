@@ -127,3 +127,22 @@ exports.loginUser = async (req, res) => {
     });
   }
 };
+
+// @desc Logout User
+// @route POST /api/auth/logout
+// @access Public (or Protected - your choice)
+exports.logoutUser = (req, res) => {
+  try {
+    return res.status(200).json({
+      success: true,
+      message: "Logged out successfully",
+      note: "Client should remove the token (JWT is stateless)",
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: error.message,
+    });
+  }
+};
