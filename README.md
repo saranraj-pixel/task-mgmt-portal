@@ -1,4 +1,5 @@
 # Task Management Portal Setup Guide
+
 Build a full-stack Task Management Portal where users can register/login, create and manage tasks with priorities and deadlines, and view a dashboard with analytics. This project is designed to evaluate both backend API design and frontend UI skills.
 
 ## 🚀 Tech Stack / Packages Used
@@ -14,7 +15,8 @@ Build a full-stack Task Management Portal where users can register/login, create
 
 ---
 
-## 📥 Clone The Repositiory 
+## 📥 Clone The Repositiory
+
 ```bash
 git clone https://github.com/your-username/your-repo-name.git cd your-repo-name
 ```
@@ -134,11 +136,151 @@ server.js
 
 ---
 
+## 🔐 Auth API Endpoints
+
+### 📌 Base Route
+
+```
+/api/auth
+```
+
+---
+
+### 🚀 1. Login
+
+**Endpoint**
+
+```
+POST /api/auth/login
+```
+
+**Request Body**
+
+```json
+{
+  "email": "john@gmail.com",
+  "password": "hksnEU38N8#(#2KE1234*$"
+}
+```
+
+**Success Response (200)**
+
+```json
+{
+  "success": true,
+  "message": "Login successful",
+  "token": "YOUR_JWT_TOKEN",
+  "data": {
+    "_id": "69c9300111c93955f92744a7",
+    "name": "John",
+    "email": "john@gmail.com",
+    "role": "admin",
+    "createdAt": "2026-03-29T13:58:25.942Z"
+  }
+}
+```
+
+**Error Responses**
+
+* **404 - User Not Found**
+
+```json
+{
+  "success": false,
+  "message": "User not found"
+}
+```
+
+* **401 - Invalid Password**
+
+```json
+{
+  "success": false,
+  "message": "Invalid password"
+}
+```
+
+---
+
+### 📝 2. Register
+
+**Endpoint**
+
+```
+POST /api/auth/register
+```
+
+**Request Body**
+
+```json
+{
+  "name": "John",
+  "email": "john@gmail.com",
+  "password": "hksnEU38N8#(#2KE1234*$",
+  "role": "admin"
+}
+```
+
+**Success Response (201)**
+
+```json
+{
+  "success": true,
+  "message": "User registered successfully",
+  "data": {
+    "id": "69c9345b11c93955f92744b3",
+    "name": "John",
+    "email": "john@gmail.com",
+    "role": "admin"
+  }
+}
+```
+
+**Error Response**
+
+* **409 - Email Already Exists**
+
+```json
+{
+  "success": false,
+  "message": "Email already exists"
+}
+```
+
+---
+
+### 🚪 3. Logout
+
+**Endpoint**
+
+```
+POST /api/auth/logout
+```
+
+**Headers**
+
+```
+Authorization: Bearer <token>
+```
+
+**Success Response (200)**
+
+```json
+{
+  "success": true,
+  "message": "Logged out successfully",
+  "note": "Client should remove the token (JWT is stateless)"
+}
+```
+
+---
+
 ## 💡 Notes
 
 * Make sure MongoDB is running or use MongoDB Atlas
 * Use tools like Postman or Thunder Client for testing APIs
 * Always validate environment variables before starting the server
+* JWT is stateless → logout must be handled on client side
 
 ---
 
@@ -147,4 +289,3 @@ server.js
 Saran Raj.R
 
 ---
-
