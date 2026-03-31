@@ -275,6 +275,86 @@ Authorization: Bearer <token>
 
 ---
 
+# 📥 Get All Tasks
+
+### Endpoint
+
+```
+GET /api/tasks
+```
+
+### Description
+
+Fetch all tasks created by the logged-in user with **pagination support**.
+
+### Success Response
+
+```json
+{
+  "success": true,
+  "tasks": [
+    {
+      "_id": "69cb6d5f4001c5ce41173aca",
+      "title": "Database Storing Issue",
+      "description": "database storing issue",
+      "priority": "medium",
+      "status": "in-progress",
+      "deadline": "2026-04-23T00:00:00.000Z",
+      "createdBy": "69ca5bed91111142085c0bc3",
+      "createdAt": "2026-03-31T06:44:47.797Z",
+      "updatedAt": "2026-03-31T06:44:47.797Z",
+      "isOverdue": false
+    }
+  ],
+  "totalCount": 26,
+  "currentPage": 1,
+  "totalPages": 3
+}
+```
+
+---
+
+# ➕ Create Task
+
+### Endpoint
+
+```
+POST /api/tasks
+```
+
+### Request Body
+
+```json
+{
+  "title": "Database API Connection Issue URI",
+  "description": "database api connection issue uri environments",
+  "priority": "medium",
+  "status": "todo",
+  "deadline": "2026-04-26"
+}
+```
+
+### Success Response
+
+```json
+{
+  "success": true,
+  "message": "Task created successfully",
+  "task": {
+    "title": "Database API Connection Issue URI",
+    "description": "database api connection issue uri environments",
+    "priority": "medium",
+    "status": "todo",
+    "deadline": "2026-04-26T00:00:00.000Z",
+    "createdBy": "69ca71a144b1951011cc3289",
+    "createdAt": "2026-03-31T06:54:28.806Z",
+    "updatedAt": "2026-03-31T06:54:28.806Z",
+    "isOverdue": false
+  }
+}
+```
+---
+
 ## 💡 Notes
 
 * Make sure MongoDB is running or use MongoDB Atlas
