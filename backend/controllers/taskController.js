@@ -1,3 +1,4 @@
+const mongoose = require("mongoose");
 const Task = require("../models/task");
 
 // @desc    Create Task
@@ -99,6 +100,168 @@ exports.getAllTasks = async (req, res) => {
       totalCount,
       currentPage: page,
       totalPages,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Server Error",
+      error: error.message,
+    });
+  }
+};
+
+// @desc Get single task
+// @route GET /api/tasks/:id
+// @access Private
+exports.getTaskById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Validate ObjectId
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid Task ID",
+      });
+    }
+
+    const task = await Task.findById(id).populate("createdBy", "name email");
+
+    // Task not found
+    if (!task) {
+      return res.status(404).json({
+        success: false,
+        message: "Task not found",
+      });
+    }
+
+    // Ownership check
+    if (task.createdBy._id.toString() !== req.user.userId) {
+      return res.status(403).json({
+        success: false,
+        message: "Not authorized to view this task",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      task,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Server Error",
+      error: error.message,
+    });
+  }
+};
+
+// @desc Update task
+// @route PUT /api/tasks/:id
+// @access Private
+exports.updateTask = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid Task ID",
+      });
+    }
+
+    const task = await Task.findById(id);
+
+    // Not found
+    if (!task) {
+      return res.status(404).json({
+        success: false,
+        message: "Task not found",
+      });
+    }
+
+    // Ownership validation
+    if (task.createdBy.toString() !== req.user.userId) {
+      return res.status(403).json({
+        success: false,
+        message: "Not authorized to update this task",
+      });
+    }
+
+    // Allowed fields
+    const allowedFields = [
+      "title",
+      "description",
+      "priority",
+      "status",
+      "deadline",
+      "assignedTo",
+    ];
+
+    allowedFields.forEach((field) => {
+      if (req.body[field] !== undefined) {
+        task[field] = req.body[field];
+      }
+    });
+
+    const updatedTask = await task.save();
+
+    const populatedTask = await Task.findById(updatedTask._id).populate(
+      "createdBy",
+      "name email",
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Task updated successfully",
+      task: populatedTask,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Server Error",
+      error: error.message,
+    });
+  }
+};
+
+// @desc Delete task
+// @route DELETE /api/tasks/:id
+// @access Private
+exports.deleteTask = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid Task ID",
+      });
+    }
+
+    const task = await Task.findById(id);
+
+    // Not found
+    if (!task) {
+      return res.status(404).json({
+        success: false,
+        message: "Task not found",
+      });
+    }
+
+    // Ownership validation
+    if (task.createdBy.toString() !== req.user.userId) {
+      return res.status(403).json({
+        success: false,
+        message: "Not authorized to delete this task",
+      });
+    }
+
+    await task.deleteOne();
+
+    res.status(200).json({
+      success: true,
+      message: "Task deleted successfully",
     });
   } catch (error) {
     res.status(500).json({
