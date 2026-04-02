@@ -74,21 +74,75 @@ exports.createTask = async (req, res) => {
 exports.getAllTasks = async (req, res) => {
   try {
     // pagination params
+
     const page = Number(req.query.page) || 1;
     const limit = Number(req.query.limit) || 10;
 
     const skip = (page - 1) * limit;
 
-    // total tasks count for this user
-    const totalCount = await Task.countDocuments({
-      createdBy: req.user.userId,
-    });
+    // query params
 
-    // fetch tasks
-    const tasks = await Task.find({
+    const {
+      status,
+      priority,
+      deadlineFrom,
+      deadlineTo,
+      search,
+      sortBy = "createdAt",
+      order = "desc",
+    } = req.query;
+
+    // Dynamic Filter Object
+
+    const filter = {
       createdBy: req.user.userId,
-    })
-      .sort({ createdAt: -1 })
+    };
+
+    // status filter
+
+    if (status) {
+      filter.status = status;
+    }
+
+    // priority filter
+
+    if (priority) {
+      filter.priority = priority;
+    }
+
+    // Deadline Range Filter
+
+    if (deadlineFrom || deadlineTo) {
+      filter.deadline = {};
+
+      if (deadlineFrom) {
+        filter.deadline.$gte = new Date(deadlineFrom);
+      }
+
+      if (deadlineTo) {
+        filter.deadline.$lte = new Date(deadlineTo);
+      }
+    }
+
+    // Case-Insensitive Search
+
+    if (search) {
+      filter.$or = [
+        { title: { $regex: search, $options: "i" } },
+        { description: { $regex: search, $options: "i" } },
+      ];
+    }
+
+    // Sorting
+
+    const sortOrder = order === "asc" ? 1 : -1;
+
+    // Execute Query
+
+    const totalCount = await Task.countDocuments(filter);
+
+    const tasks = await Task.find(filter)
+      .sort({ [sortBy]: sortOrder })
       .skip(skip)
       .limit(limit);
 
