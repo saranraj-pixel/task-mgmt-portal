@@ -164,6 +164,136 @@ exports.getAllTasks = async (req, res) => {
   }
 };
 
+// @desc    Get Task Statistics
+// @route   GET /api/tasks/stats
+// @access  Private
+exports.getTaskStats = async (req, res) => {
+  try {
+    const userId = new mongoose.Types.ObjectId(req.user.userId);
+    const now = new Date();
+
+    const stats = await Task.aggregate([
+      {
+        $match: {
+          createdBy: userId
+        }
+      },
+      {
+        $group: {
+          _id: null,
+
+          totalTasks: { $sum: 1 },
+
+          completedTasks: {
+            $sum: {
+              $cond: [{ $eq: ["$status", "done"] }, 1, 0]
+            }
+          },
+
+          inProgressTasks: {
+            $sum: {
+              $cond: [{ $eq: ["$status", "in-progress"] }, 1, 0]
+            }
+          },
+
+          todoTasks: {
+            $sum: {
+              $cond: [{ $eq: ["$status", "todo"] }, 1, 0]
+            }
+          },
+
+          overdueTasks: {
+            $sum: {
+              $cond: [
+                {
+                  $and: [
+                    { $lt: ["$deadline", now] },
+                    { $ne: ["$status", "done"] }
+                  ]
+                },
+                1,
+                0
+              ]
+            }
+          },
+
+          lowPriority: {
+            $sum: {
+              $cond: [{ $eq: ["$priority", "low"] }, 1, 0]
+            }
+          },
+
+          mediumPriority: {
+            $sum: {
+              $cond: [{ $eq: ["$priority", "medium"] }, 1, 0]
+            }
+          },
+
+          highPriority: {
+            $sum: {
+              $cond: [{ $eq: ["$priority", "high"] }, 1, 0]
+            }
+          }
+        }
+      },
+      {
+        $project: {
+          _id: 0,
+
+          totalTasks: 1,
+          completedTasks: 1,
+          inProgressTasks: 1,
+          todoTasks: 1,
+          overdueTasks: 1,
+
+          completionPercentage: {
+            $cond: [
+              { $eq: ["$totalTasks", 0] },
+              0,
+              {
+                $multiply: [
+                  { $divide: ["$completedTasks", "$totalTasks"] },
+                  100
+                ]
+              }
+            ]
+          },
+
+          tasksByPriority: {
+            low: "$lowPriority",
+            medium: "$mediumPriority",
+            high: "$highPriority"
+          }
+        }
+      }
+    ]);
+
+    res.status(200).json({
+      success: true,
+      stats: stats[0] || {
+        totalTasks: 0,
+        completedTasks: 0,
+        inProgressTasks: 0,
+        todoTasks: 0,
+        overdueTasks: 0,
+        completionPercentage: 0,
+        tasksByPriority: {
+          low: 0,
+          medium: 0,
+          high: 0
+        }
+      }
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Server Error",
+      error: error.message
+    });
+  }
+};
+
 // @desc Get single task
 // @route GET /api/tasks/:id
 // @access Private
