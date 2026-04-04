@@ -4,6 +4,7 @@ const cors = require("cors");
 const connectDB = require("./config/db");
 const authRoutes = require("./routes/authRoutes");
 const taskRoutes = require("./routes/taskRoute");
+const errorHandler = require("./middleware/errorHandler");
 
 const PORT = process.env.PORT || 6000;
 
@@ -20,6 +21,9 @@ app.get("/", (req, res) => {
 
 app.use("/api/auth", authRoutes);
 app.use("/api/tasks", taskRoutes);
+
+// Global error handler
+app.use(errorHandler);
 
 const serverUp = async () => {
   try {
