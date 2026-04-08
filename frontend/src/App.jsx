@@ -1,4 +1,4 @@
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -11,7 +11,9 @@ import TaskBoard from "./pages/TaskBoard";
 import Profile from "./pages/Profile";
 
 import ProtectedRoute from "./routes/ProtectedRoute";
+import PublicRoute from "./routes/PublicRoute";
 import DashboardLayout from "./layouts/DashboardLayout";
+import NotFound from "./pages/NotFound";
 
 function App() {
   return (
@@ -19,8 +21,30 @@ function App() {
       <ToastContainer theme="colored" />
 
       <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
+        {/* Root */}
+        <Route path="/" element={<Navigate to="/login" replace />} />
+
+        {/* Not Found */}
+        <Route path="*" element={<NotFound />} />
+
+        {/* Public Routes */}
+        <Route
+          path="/login"
+          element={
+            <PublicRoute>
+              <Login />
+            </PublicRoute>
+          }
+        />
+
+        <Route
+          path="/register"
+          element={
+            <PublicRoute>
+              <Register />
+            </PublicRoute>
+          }
+        />
 
         {/* Protected Routes */}
         <Route
@@ -30,6 +54,7 @@ function App() {
             </ProtectedRoute>
           }
         >
+          {/* User Routes */}
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/tasks" element={<Tasks />} />
           <Route path="/board" element={<TaskBoard />} />

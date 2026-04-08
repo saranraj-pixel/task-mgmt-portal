@@ -3,13 +3,16 @@ import { loginUser } from "../services/authService";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 
+import { useAuth } from "../context/AuthContext";
+
 import AuthLayout from "../layouts/AuthLayout";
 import FormInput from "../components/FormInput";
-import { toast } from "react-toastify";
 import Spinner from "../components/Spinner";
+import { toast } from "react-toastify";
 
 function Login() {
   const navigate = useNavigate();
+  const { login } = useAuth();
 
   const [loading, setLoading] = useState(false);
   const [serverError, setServerError] = useState("");
@@ -27,7 +30,7 @@ function Login() {
 
       const res = await loginUser(data);
 
-      localStorage.setItem("token", res.token);
+      login(res.token, res.data);
 
       toast.success("Login successful. Welcome back");
 
@@ -57,18 +60,15 @@ function Login() {
         <FormInput
           label="Email"
           type="email"
-          register={register("email", {
-            required: "Email required",
-          })}
+          register={register("email", { required: "Email required" })}
           error={errors.email}
         />
 
         <FormInput
+          isPassword
           label="Password"
           type="password"
-          register={register("password", {
-            required: "Password required",
-          })}
+          register={register("password", { required: "Password required" })}
           error={errors.password}
         />
 

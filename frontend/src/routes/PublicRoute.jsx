@@ -2,23 +2,22 @@ import { Navigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import Loader from "../components/Loader";
 
-const ProtectedRoute = ({ children }) => {
+const PublicRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
 
-  if (loading) {
+  if (loading)
     return (
       <p>
         <Loader />
       </p>
     );
-  }
 
-  // if user not logged in redirect to login
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+  // if user already logged in redirect to dashboard
+  if (isAuthenticated) {
+    return <Navigate to="/dashboard" replace />;
   }
 
   return children;
 };
 
-export default ProtectedRoute;
+export default PublicRoute;
