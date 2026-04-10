@@ -1,8 +1,10 @@
 # Task Management Portal Setup Guide
 
-Build a full-stack Task Management Portal where users can register/login, create and manage tasks with priorities and deadlines, and view a dashboard with analytics. This project is designed to evaluate both backend API design and frontend UI skills.
+Build a full-stack **Task Management Portal** where users can register/login, create and manage tasks with priorities and deadlines, and view a dashboard with analytics. This project demonstrates backend API design, authentication, and task management features.
 
-## 🚀 Tech Stack / Packages Used
+---
+
+# 🚀 Tech Stack / Packages Used
 
 ### Core Dependencies
 
@@ -15,15 +17,16 @@ Build a full-stack Task Management Portal where users can register/login, create
 
 ---
 
-## 📥 Clone The Repositiory
+# 📥 Clone The Repository
 
 ```bash
-git clone https://github.com/your-username/your-repo-name.git cd your-repo-name
+git clone https://github.com/your-username/your-repo-name.git
+cd your-repo-name
 ```
 
 ---
 
-## 📥 Installation
+# 📥 Installation
 
 ```bash
 npm install
@@ -31,7 +34,7 @@ npm install
 
 ---
 
-## ⚙️ Environment Variables
+# ⚙️ Environment Variables
 
 Create a `.env` file in the root directory and add the following:
 
@@ -44,62 +47,62 @@ JWT_EXPIRES_IN=YOUR_TOKEN_EXPIRATION
 
 ---
 
-## 🔑 Environment Variables Explained
+# 🔑 Environment Variables Explained
 
-### `PORT`
+### PORT
 
-* The port where your server will run
-* Example:
+The port where your server will run.
 
-  ```
-  PORT=5000
-  ```
+Example:
 
----
-
-### `MONGO_URI`
-
-* Your MongoDB connection string
-* Example:
-
-  ```
-  MONGO_URI=mongodb+srv://username:password@cluster.mongodb.net/dbname
-  ```
-
----
-
-### `JWT_SECRET`
-
-* Secret key used to sign JWT tokens
-* Must be **long, random, and secure**
-* Example:
-
-  ```
-  JWT_SECRET=your_super_secure_random_string
-  ```
-
-👉 Generate securely:
-
-```bash
-node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
+```
+PORT=5000
 ```
 
 ---
 
-### `JWT_EXPIRES_IN`
+### MONGO_URI
 
-* Token expiration time
-* Examples:
+Your MongoDB connection string.
 
-  ```
-  JWT_EXPIRES_IN=7d
-  JWT_EXPIRES_IN=1h
-  JWT_EXPIRES_IN=30m
-  ```
+Example:
+
+```
+MONGO_URI=mongodb+srv://username:password@cluster.mongodb.net/dbname
+```
 
 ---
 
-## ▶️ Run the Server
+### JWT_SECRET
+
+Secret key used to sign JWT tokens.
+
+Example:
+
+```
+JWT_SECRET=your_super_secure_random_string
+```
+
+
+---
+
+### JWT_EXPIRES_IN
+
+
+Token expiration time.
+
+
+Examples:
+
+```
+JWT_EXPIRES_IN=7d
+JWT_EXPIRES_IN=1h
+JWT_EXPIRES_IN=30m
+```
+
+---
+
+# ▶️ Run the Server
 
 ```bash
 npm start
@@ -113,7 +116,7 @@ node server.js
 
 ---
 
-## 🛡️ Security Notes
+# 🛡️ Security Notes
 
 * Never commit `.env` file to GitHub
 * Add `.env` to `.gitignore`
@@ -122,7 +125,7 @@ node server.js
 
 ---
 
-## 📁 Recommended Project Structure
+# 📁 Recommended Project Structure
 
 ```
 /controllers
@@ -136,9 +139,9 @@ server.js
 
 ---
 
-## 🔐 Auth API Endpoints
+# 🔐 Auth API Endpoints
 
-### 📌 Base Route
+## Base Route
 
 ```
 /api/auth
@@ -146,24 +149,24 @@ server.js
 
 ---
 
-### 🚀 1. Login
+## 1. Login
 
-**Endpoint**
+### Endpoint
 
 ```
 POST /api/auth/login
 ```
 
-**Request Body**
+### Request Body
 
 ```json
 {
-  "email": "john@gmail.com",
+  "email": "johndoe@gmail.com",
   "password": "hksnEU38N8#(#2KE1234*$"
 }
 ```
 
-**Success Response (200)**
+### Success Response
 
 ```json
 {
@@ -172,56 +175,36 @@ POST /api/auth/login
   "token": "YOUR_JWT_TOKEN",
   "data": {
     "_id": "69c9300111c93955f92744a7",
-    "name": "John",
-    "email": "john@gmail.com",
+    "name": "John Doe",
+    "email": "johndoe@gmail.com",
     "role": "admin",
     "createdAt": "2026-03-29T13:58:25.942Z"
   }
 }
 ```
 
-**Error Responses**
-
-* **404 - User Not Found**
-
-```json
-{
-  "success": false,
-  "message": "User not found"
-}
-```
-
-* **401 - Invalid Password**
-
-```json
-{
-  "success": false,
-  "message": "Invalid password"
-}
-```
-
 ---
 
-### 📝 2. Register
+## 2. Register
 
-**Endpoint**
+### Endpoint
 
 ```
 POST /api/auth/register
 ```
 
-**Request Body**
+### Request Body
 
 ```json
 {
-  "name": "John",
-  "email": "john@gmail.com",
+  "name": "John Doe",
+  "email": "johndoe@gmail.com",
   "password": "hksnEU38N8#(#2KE1234*$",
   "role": "admin"
 }
 ```
 
-**Success Response (201)**
+### Success Response
 
 ```json
 {
@@ -229,41 +212,30 @@ POST /api/auth/register
   "message": "User registered successfully",
   "data": {
     "id": "69c9345b11c93955f92744b3",
-    "name": "John",
-    "email": "john@gmail.com",
+    "name": "John Doe",
+    "email": "johndoe@gmail.com",
     "role": "admin"
   }
 }
 ```
 
-**Error Response**
-
-* **409 - Email Already Exists**
-
-```json
-{
-  "success": false,
-  "message": "Email already exists"
-}
-```
-
 ---
 
-### 🚪 3. Logout
+## 3. Logout
 
-**Endpoint**
+### Endpoint
 
 ```
 POST /api/auth/logout
 ```
 
-**Headers**
+### Headers
 
 ```
 Authorization: Bearer <token>
 ```
 
-**Success Response (200)**
+### Success Response
 
 ```json
 {
@@ -271,6 +243,22 @@ Authorization: Bearer <token>
   "message": "Logged out successfully",
   "note": "Client should remove the token (JWT is stateless)"
 }
+```
+
+---
+
+# 📋 Task API Endpoints
+
+## Base Route
+
+```
+/api/tasks
+```
+
+All task APIs require authentication.
+
+```
+Authorization: Bearer <token>
 ```
 
 ---
@@ -353,19 +341,166 @@ POST /api/tasks
   }
 }
 ```
----
-
-## 💡 Notes
-
-* Make sure MongoDB is running or use MongoDB Atlas
-* Use tools like Postman or Thunder Client for testing APIs
-* Always validate environment variables before starting the server
-* JWT is stateless → logout must be handled on client side
 
 ---
 
-## 🧑‍💻 Author
+# 📊 Get Task Statistics
+
+### Endpoint
+
+```
+GET /api/tasks/stats
+```
+
+### Headers
+
+```
+Authorization: Bearer <token>
+```
+
+### Success Response
+
+```json
+{
+  "success": true,
+  "stats": {
+    "totalTasks": 15,
+    "completedTasks": 6,
+    "inProgressTasks": 4,
+    "todoTasks": 5,
+    "overdueTasks": 0,
+    "completionPercentage": 40,
+    "tasksByPriority": {
+      "low": 3,
+      "medium": 7,
+      "high": 5
+    }
+  }
+}
+```
+
+---
+
+# 🔎 Get Task By ID
+
+### Endpoint
+
+```
+GET /api/tasks/:id
+```
+
+Example
+
+```
+GET /api/tasks/69d899272266d05ccc94f358
+```
+
+### Success Response
+
+```json
+{
+  "success": true,
+  "task": {
+    "_id": "69d899272266d05ccc94f358",
+    "title": "Web Design",
+    "description": "web design improving",
+    "priority": "medium",
+    "status": "todo",
+    "deadline": "2026-04-11T00:00:00.000Z",
+    "createdBy": {
+      "_id": "69d5e2cb5484e7a38b76ae5a",
+      "name": "John Doe",
+      "email": "johndoe@gmail.com"
+    },
+    "createdAt": "2026-04-10T06:31:03.982Z",
+    "updatedAt": "2026-04-10T06:35:31.492Z",
+    "isOverdue": false,
+    "id": "69d899272266d05ccc94f358"
+  }
+}
+```
+
+---
+
+# ✏️ Update Task
+
+### Endpoint
+
+```
+PUT /api/tasks/:id
+```
+
+Example
+
+```
+PUT /api/tasks/69d899272266d05ccc94f358
+```
+
+### Request Body
+
+```json
+{
+  "title": "Web Design",
+  "description": "web design improving",
+  "priority": "medium",
+  "status": "todo",
+  "deadline": "2026-04-11T00:00:00.000Z"
+}
+```
+
+### Success Response
+
+```json
+{
+  "success": true,
+  "message": "Task updated successfully",
+  "task": {
+    "_id": "69d899272266d05ccc94f358",
+    "title": "Web Design",
+    "description": "web design improving",
+    "priority": "medium",
+    "status": "todo",
+    "deadline": "2026-04-11T00:00:00.000Z"
+  }
+}
+```
+
+---
+
+# ❌ Delete Task
+
+### Endpoint
+
+```
+DELETE /api/tasks/:id
+```
+
+Example
+
+```
+DELETE /api/tasks/69d38b0adf9df9dc8e20fb39
+```
+
+### Success Response
+
+```json
+{
+  "success": true,
+  "message": "Task deleted successfully"
+}
+```
+
+---
+
+# 💡 Notes
+
+* All APIs include **validation and proper error handling**
+* JWT authentication is required for all task routes
+* Use **Postman or Thunder Client** to test APIs
+* MongoDB Atlas recommended for production
+
+---
+
+# 🧑‍💻 Author
 
 Saran Raj.R
-
----
