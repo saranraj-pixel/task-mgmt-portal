@@ -8,7 +8,7 @@ const Navbar = () => {
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
-    <nav className="bg-linear-to-r from-indigo-600 to-indigo-500 text-white shadow-md">
+    <nav className="bg-linear-to-r sticky z-50 top-0 from-indigo-600 to-indigo-500 text-white shadow-md">
       <div className="flex justify-between items-center p-4 mx-auto">
         {/* Logo */}
         <Link to="/dashboard">
@@ -59,7 +59,7 @@ const Navbar = () => {
 
       {/* Overlay */}
       <div
-        className={`fixed inset-0 bg-black/40 transition-opacity duration-300 ${
+        className={`fixed inset-0 z-40 bg-black/40 transition-opacity duration-300 ${
           menuOpen ? "opacity-100 visible" : "opacity-0 invisible"
         }`}
         onClick={() => setMenuOpen(false)}
@@ -67,7 +67,7 @@ const Navbar = () => {
 
       {/* Mobile Drawer */}
       <div
-        className={`fixed top-0 right-0 h-full w-64 bg-white text-slate-700 shadow-lg transform transition-transform duration-300 ${
+        className={`fixed top-0 right-0 z-50 h-full w-64 bg-white text-slate-700 shadow-lg transform transition-transform duration-300 ${
           menuOpen ? "translate-x-0" : "translate-x-full"
         }`}
       >
