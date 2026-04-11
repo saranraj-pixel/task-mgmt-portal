@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { getTasks } from "../services/taskService";
 import { FiEdit, FiTrash2, FiPlus } from "react-icons/fi";
+import TaskModal from "../components/TaskModal";
 
 const Tasks = () => {
   const [tasks, setTasks] = useState([]);
@@ -8,7 +9,22 @@ const Tasks = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
 
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedTask, setSelectedTask] = useState(null);
+
   const [loading, setLoading] = useState(true);
+
+  // modal
+
+  const openCreateModal = () => {
+    setSelectedTask(null);
+    setIsModalOpen(true);
+  };
+
+  const openEditModal = (task) => {
+    setSelectedTask(task);
+    setIsModalOpen(true);
+  };
 
   // search + filters
   const [search, setSearch] = useState("");
@@ -88,7 +104,10 @@ const Tasks = () => {
           Tasks <span className="text-blue-500">({totalCount})</span>
         </h1>
 
-        <button className="flex items-center justify-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition w-full [@media(min-width:350px)]:w-auto cursor-pointer">
+        <button
+          onClick={openCreateModal}
+          className="flex items-center justify-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition w-full [@media(min-width:350px)]:w-auto cursor-pointer"
+        >
           <FiPlus />
           Add Task
         </button>
@@ -233,7 +252,10 @@ const Tasks = () => {
                     </td>
 
                     <td className="p-4 flex gap-3 text-xl">
-                      <button className="text-blue-600 hover:text-blue-800 cursor-pointer">
+                      <button
+                        onClick={() => openEditModal(task)}
+                        className="text-blue-600 hover:text-blue-800 cursor-pointer"
+                      >
                         <FiEdit />
                       </button>
 
@@ -300,7 +322,10 @@ const Tasks = () => {
 
                 {/* Actions */}
                 <div className="flex gap-4 text-xl">
-                  <button className="text-blue-600 hover:text-blue-800 cursor-pointer">
+                  <button
+                    onClick={() => openEditModal(task)}
+                    className="text-blue-600 hover:text-blue-800 cursor-pointer"
+                  >
                     <FiEdit />
                   </button>
 
@@ -337,6 +362,12 @@ const Tasks = () => {
           Next
         </button>
       </div>
+      <TaskModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        task={selectedTask}
+        onSave={fetchTasks}
+      />
     </div>
   );
 };
