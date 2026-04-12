@@ -34,3 +34,8 @@ export const updateTask = async (id, taskData) => {
   const response = await api.put(`/api/tasks/${id}`, taskData);
   return response.data;
 };
+
+export const deleteTask = async (id) => {
+  const response = await api.delete(`/api/tasks/${id}`);
+  return response.data;
+};

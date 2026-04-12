@@ -2,6 +2,9 @@ import { useEffect, useState, useCallback } from "react";
 import { getTasks } from "../services/taskService";
 import { FiEdit, FiTrash2, FiPlus } from "react-icons/fi";
 import TaskModal from "../components/TaskModal";
+import ConfirmDialog from "../components/ConfirmDialog";
+import { deleteTask } from "../services/taskService";
+import { toast } from "react-toastify";
 
 const Tasks = () => {
   const [tasks, setTasks] = useState([]);
@@ -12,7 +15,31 @@ const Tasks = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState(null);
 
+  const [deleteId, setDeleteId] = useState(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+
   const [loading, setLoading] = useState(true);
+
+  const handleDeleteClick = (id) => {
+    setDeleteId(id);
+    setConfirmOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    try {
+      await deleteTask(deleteId);
+
+      setTasks((prev) => prev.filter((t) => t.id !== deleteId));
+
+      toast.success("Task deleted successfully");
+
+      setConfirmOpen(false);
+      setDeleteId(null);
+    } catch (error) {
+      toast.error("Failed to delete task");
+      console.error(error);
+    }
+  };
 
   // modal
 
@@ -259,7 +286,10 @@ const Tasks = () => {
                         <FiEdit />
                       </button>
 
-                      <button className="text-red-600 hover:text-red-800 cursor-pointer">
+                      <button
+                        onClick={() => handleDeleteClick(task.id)}
+                        className="text-red-600 hover:text-red-800 cursor-pointer"
+                      >
                         <FiTrash2 />
                       </button>
                     </td>
@@ -329,7 +359,10 @@ const Tasks = () => {
                     <FiEdit />
                   </button>
 
-                  <button className="text-red-600 hover:text-red-800 cursor-pointer">
+                  <button
+                    onClick={() => handleDeleteClick(task.id)}
+                    className="text-red-600 hover:text-red-800 cursor-pointer"
+                  >
                     <FiTrash2 />
                   </button>
                 </div>
@@ -367,6 +400,12 @@ const Tasks = () => {
         onClose={() => setIsModalOpen(false)}
         task={selectedTask}
         onSave={fetchTasks}
+      />
+      <ConfirmDialog
+        isOpen={confirmOpen}
+        message="Are you sure you want to delete this task?"
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setConfirmOpen(false)}
       />
     </div>
   );
