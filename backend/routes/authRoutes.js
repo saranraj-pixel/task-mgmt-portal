@@ -1,10 +1,26 @@
 const express = require("express");
-const { registerUser, loginUser, logoutUser } = require("../controllers/authController");
-const { registerValidation, validate } = require("../middleware/validation/commonValidation");
+const {
+  registerUser,
+  loginUser,
+  logoutUser,
+  getMe,
+  updateProfile,
+  changePassword,
+} = require("../controllers/authController");
+const { protectRoute } = require("../middleware/authMiddleware");
+const { registerValidation } = require("../middleware/validation/registerValidation");
+const { validate } = require("../middleware/validation/commonValidation");
+const { loginValidation } = require("../middleware/validation/loginValidation");
+const { updateProfileValidation } = require("../middleware/validation/updateProfileValidation");
+const { changePasswordValidation } = require("../middleware/validation/changePasswordValidation");
 const router = express.Router();
 
-router.post("/login", loginUser);
-router.post("/register",registerValidation, validate, registerUser);
-router.post("/logout", logoutUser);
+router.post("/login",loginValidation, validate, loginUser);
+router.post("/register", registerValidation, validate, registerUser);
+router.post("/logout",protectRoute, logoutUser);
+
+router.get("/me", protectRoute, getMe);
+router.put("/profile", protectRoute,updateProfileValidation, validate, updateProfile);
+router.put("/change-password", protectRoute, changePasswordValidation, validate, changePassword);
 
 module.exports = router;

@@ -6,7 +6,7 @@ const jwt = require("jsonwebtoken");
 // @access Public
 exports.registerUser = async (req, res) => {
   try {
-    const { name, email, password, role} = req.body;
+    const { name, email, password, role } = req.body;
 
     // ✅ Validate input
     if (!name) {
@@ -50,7 +50,7 @@ exports.registerUser = async (req, res) => {
         id: user._id,
         name: user.name,
         email: user.email,
-        role: user.role
+        role: user.role,
       },
     });
   } catch (error) {
@@ -108,7 +108,7 @@ exports.loginUser = async (req, res) => {
     const token = jwt.sign(
       { userId: user._id, role: user.role || "user" }, // role optional
       process.env.JWT_SECRET,
-      { expiresIn: process.env.JWT_EXPIRES_IN }
+      { expiresIn: process.env.JWT_EXPIRES_IN },
     );
 
     // ✅ Response
@@ -118,7 +118,6 @@ exports.loginUser = async (req, res) => {
       token,
       data: user.getProfile(),
     });
-
   } catch (error) {
     return res.status(500).json({
       success: false,
@@ -130,13 +129,108 @@ exports.loginUser = async (req, res) => {
 
 // @desc Logout User
 // @route POST /api/auth/logout
-// @access Public (or Protected - your choice)
+// @access Private
 exports.logoutUser = (req, res) => {
   try {
     return res.status(200).json({
       success: true,
       message: "Logged out successfully",
-      note: "Client should remove the token (JWT is stateless)",
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: error.message,
+    });
+  }
+};
+
+// @desc Get current user profile
+// @route GET /api/auth/me
+// @access Private
+exports.getMe = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.userId).select("-password");
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: user,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: error.message,
+    });
+  }
+};
+
+// @desc Update user profile (name only)
+// @route PUT /api/auth/profile
+// @access Private
+exports.updateProfile = async (req, res) => {
+  try {
+    const { name } = req.body;
+
+    const user = await User.findByIdAndUpdate(
+      req.user.userId,
+      { name },
+      { new: true },
+    ).select("-password");
+
+    return res.status(200).json({
+      success: true,
+      message: "Profile updated successfully",
+      data: user,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: error.message,
+    });
+  }
+};
+
+// @desc Change password
+// @route PUT /api/auth/change-password
+// @access Private
+exports.changePassword = async (req, res) => {
+  try {
+    const { oldPassword, newPassword, confirmPassword } = req.body;
+
+    if (newPassword !== confirmPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "New passwords do not match",
+      });
+    }
+
+    const user = await User.findById(req.user.userId).select("+password");
+
+    const isMatch = await user.comparePassword(oldPassword);
+
+    if (!isMatch) {
+      return res.status(401).json({
+        success: false,
+        message: "Old password is incorrect",
+      });
+    }
+
+    user.password = newPassword;
+
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Password changed successfully",
     });
   } catch (error) {
     return res.status(500).json({
