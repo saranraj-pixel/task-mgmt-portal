@@ -175,8 +175,8 @@ exports.getTaskStats = async (req, res) => {
     const stats = await Task.aggregate([
       {
         $match: {
-          createdBy: userId
-        }
+          createdBy: userId,
+        },
       },
       {
         $group: {
@@ -186,20 +186,20 @@ exports.getTaskStats = async (req, res) => {
 
           completedTasks: {
             $sum: {
-              $cond: [{ $eq: ["$status", "done"] }, 1, 0]
-            }
+              $cond: [{ $eq: ["$status", "done"] }, 1, 0],
+            },
           },
 
           inProgressTasks: {
             $sum: {
-              $cond: [{ $eq: ["$status", "in-progress"] }, 1, 0]
-            }
+              $cond: [{ $eq: ["$status", "in-progress"] }, 1, 0],
+            },
           },
 
           todoTasks: {
             $sum: {
-              $cond: [{ $eq: ["$status", "todo"] }, 1, 0]
-            }
+              $cond: [{ $eq: ["$status", "todo"] }, 1, 0],
+            },
           },
 
           overdueTasks: {
@@ -208,33 +208,33 @@ exports.getTaskStats = async (req, res) => {
                 {
                   $and: [
                     { $lt: ["$deadline", now] },
-                    { $ne: ["$status", "done"] }
-                  ]
+                    { $ne: ["$status", "done"] },
+                  ],
                 },
                 1,
-                0
-              ]
-            }
+                0,
+              ],
+            },
           },
 
           lowPriority: {
             $sum: {
-              $cond: [{ $eq: ["$priority", "low"] }, 1, 0]
-            }
+              $cond: [{ $eq: ["$priority", "low"] }, 1, 0],
+            },
           },
 
           mediumPriority: {
             $sum: {
-              $cond: [{ $eq: ["$priority", "medium"] }, 1, 0]
-            }
+              $cond: [{ $eq: ["$priority", "medium"] }, 1, 0],
+            },
           },
 
           highPriority: {
             $sum: {
-              $cond: [{ $eq: ["$priority", "high"] }, 1, 0]
-            }
-          }
-        }
+              $cond: [{ $eq: ["$priority", "high"] }, 1, 0],
+            },
+          },
+        },
       },
       {
         $project: {
@@ -253,19 +253,19 @@ exports.getTaskStats = async (req, res) => {
               {
                 $multiply: [
                   { $divide: ["$completedTasks", "$totalTasks"] },
-                  100
-                ]
-              }
-            ]
+                  100,
+                ],
+              },
+            ],
           },
 
           tasksByPriority: {
             low: "$lowPriority",
             medium: "$mediumPriority",
-            high: "$highPriority"
-          }
-        }
-      }
+            high: "$highPriority",
+          },
+        },
+      },
     ]);
 
     res.status(200).json({
@@ -280,16 +280,15 @@ exports.getTaskStats = async (req, res) => {
         tasksByPriority: {
           low: 0,
           medium: 0,
-          high: 0
-        }
-      }
+          high: 0,
+        },
+      },
     });
-
   } catch (error) {
     res.status(500).json({
       success: false,
       message: "Server Error",
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -300,14 +299,6 @@ exports.getTaskStats = async (req, res) => {
 exports.getTaskById = async (req, res) => {
   try {
     const { id } = req.params;
-
-    // Validate ObjectId
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid Task ID",
-      });
-    }
 
     const task = await Task.findById(id).populate("createdBy", "name email");
 
@@ -346,13 +337,6 @@ exports.getTaskById = async (req, res) => {
 exports.updateTask = async (req, res) => {
   try {
     const { id } = req.params;
-
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid Task ID",
-      });
-    }
 
     const task = await Task.findById(id);
 
@@ -415,13 +399,6 @@ exports.updateTask = async (req, res) => {
 exports.deleteTask = async (req, res) => {
   try {
     const { id } = req.params;
-
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid Task ID",
-      });
-    }
 
     const task = await Task.findById(id);
 

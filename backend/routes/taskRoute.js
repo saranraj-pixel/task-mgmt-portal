@@ -11,7 +11,9 @@ const {
 } = require("../controllers/taskController");
 
 const { protectRoute } = require("../middleware/authMiddleware");
-const { createTaskValidation, validate } = require("../middleware/validation/commonValidation");
+const { createTaskValidation } = require("../middleware/validation/createTaskValidation");
+const { validate } = require("../middleware/validation/commonValidation");
+const { idValidation } = require("../middleware/validation/idValidation");
 
 // Protect all routes
 router.use(protectRoute);
@@ -20,8 +22,8 @@ router.use(protectRoute);
 router.post("/", createTaskValidation, validate, createTask);
 router.get("/", getAllTasks);
 router.get("/stats", getTaskStats);
-router.get("/:id", getTaskById);
-router.put("/:id",createTaskValidation, validate, updateTask);
-router.delete("/:id", deleteTask);
+router.get("/:id",idValidation, validate, getTaskById);
+router.put("/:id",createTaskValidation, idValidation, validate, updateTask);
+router.delete("/:id",idValidation, validate, deleteTask);
 
 module.exports = router;
