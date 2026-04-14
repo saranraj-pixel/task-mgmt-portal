@@ -19,12 +19,18 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    const status = error?.response?.status;
+    const message = error?.response?.data?.message;
+
+    // Only logout if token expired
     if (
-      error.response?.status === 401 &&
+      status === 401 &&
+      message === "Token expired" &&
       window.location.pathname !== "/login"
     ) {
       localStorage.removeItem("token");
       window.location.href = "/login";
+      return;
     }
 
     return Promise.reject(error);
