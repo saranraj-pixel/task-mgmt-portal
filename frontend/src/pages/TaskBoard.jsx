@@ -46,9 +46,12 @@ export default function TaskBoard() {
   useEffect(() => {
     const fetchTasks = async () => {
       try {
-        const res = await getTasks("1", 1000);
+        const res = await getTasks({
+          page: 1,
+          limit: 1000,
+        });
 
-        const tasks = res?.tasks || res?.data || [];
+        const tasks = res?.tasks || [];
 
         const grouped = {
           todo: [],

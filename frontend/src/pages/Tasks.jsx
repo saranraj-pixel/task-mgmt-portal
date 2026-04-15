@@ -1,16 +1,18 @@
 import { useEffect, useState, useCallback } from "react";
-import { getTasks } from "../services/taskService";
+import { useSearchParams } from "react-router-dom";
+import { getTasks, deleteTask } from "../services/taskService";
 import { FiEdit, FiTrash2, FiPlus } from "react-icons/fi";
 import TaskModal from "../components/TaskModal";
 import ConfirmDialog from "../components/ConfirmDialog";
-import { deleteTask } from "../services/taskService";
 import { toast } from "react-toastify";
 
 const Tasks = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
+
   const [tasks, setTasks] = useState([]);
-  const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
+  const [loading, setLoading] = useState(true);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState(null);
@@ -18,8 +20,78 @@ const Tasks = () => {
   const [deleteId, setDeleteId] = useState(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
 
-  const [loading, setLoading] = useState(true);
+  const [searchInput, setSearchInput] = useState("");
 
+  // Read values from URL
+  const page = Number(searchParams.get("page")) || 1;
+  const search = searchParams.get("search") || "";
+  const priority = searchParams.get("priority") || "";
+  const status = searchParams.get("status") || "";
+  const deadlineFrom = searchParams.get("deadlineFrom") || "";
+  const deadlineTo = searchParams.get("deadlineTo") || "";
+
+  // Sync search input with URL
+  useEffect(() => {
+    setSearchInput(search);
+  }, [search]);
+
+  // Update URL params
+  const updateParams = useCallback(
+    (updates) => {
+      const params = Object.fromEntries([...searchParams]);
+
+      Object.entries(updates).forEach(([key, value]) => {
+        if (!value) {
+          delete params[key];
+        } else {
+          params[key] = value;
+        }
+      });
+
+      setSearchParams(params);
+    },
+    [searchParams, setSearchParams],
+  );
+
+  // Debounce search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      updateParams({ search: searchInput, page: 1 });
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchInput, updateParams]);
+
+  // Fetch tasks
+  const fetchTasks = useCallback(async () => {
+    try {
+      setLoading(true);
+
+      const data = await getTasks({
+        page,
+        limit: 10,
+        search,
+        priority,
+        status,
+        deadlineFrom,
+        deadlineTo,
+      });
+
+      setTasks(data.tasks);
+      setTotalPages(data.totalPages);
+      setTotalCount(data.totalCount);
+    } catch (error) {
+      console.error("Error fetching tasks", error);
+    } finally {
+      setLoading(false);
+    }
+  }, [page, search, priority, status, deadlineFrom, deadlineTo]);
+
+  useEffect(() => {
+    fetchTasks();
+  }, [fetchTasks]);
+
+  // Delete
   const handleDeleteClick = (id) => {
     setDeleteId(id);
     setConfirmOpen(true);
@@ -29,20 +101,17 @@ const Tasks = () => {
     try {
       await deleteTask(deleteId);
 
-      setTasks((prev) => prev.filter((t) => t.id !== deleteId));
+      setTasks((prev) => prev.filter((t) => t._id !== deleteId));
 
       toast.success("Task deleted successfully");
 
       setConfirmOpen(false);
-      setDeleteId(null);
     } catch (error) {
-      toast.error("Failed to delete task");
-      console.error(error);
+      toast.error("Failed to delete task", error);
     }
   };
 
-  // modal
-
+  // Modal
   const openCreateModal = () => {
     setSelectedTask(null);
     setIsModalOpen(true);
@@ -53,36 +122,11 @@ const Tasks = () => {
     setIsModalOpen(true);
   };
 
-  // search + filters
-  const [search, setSearch] = useState("");
-  const [priorityFilter, setPriorityFilter] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
-
-  const fetchTasks = useCallback(async () => {
-    try {
-      setLoading(true);
-
-      const data = await getTasks(
-        page,
-        10,
-        search,
-        priorityFilter,
-        statusFilter,
-      );
-
-      setTasks(data.tasks);
-      setTotalPages(data.totalPages);
-      setTotalCount(data.totalCount);
-    } catch (error) {
-      console.error("Error fetching tasks", error);
-    } finally {
-      setLoading(false);
-    }
-  }, [page, search, priorityFilter, statusFilter]);
-
-  useEffect(() => {
-    fetchTasks();
-  }, [fetchTasks]);
+  // Clear filters
+  const clearFilters = () => {
+    setSearchInput("");
+    setSearchParams({});
+  };
 
   const priorityColor = (priority) => {
     switch (priority) {
@@ -116,15 +160,12 @@ const Tasks = () => {
 
   const formatLabel = (value) => {
     if (!value) return "";
-
-    return value
-      .replace("-", " ") // remove hyphen
-      .replace(/\b\w/g, (char) => char.toUpperCase()); // capitalize
+    return value.replace("-", " ").replace(/\b\w/g, (c) => c.toUpperCase());
   };
 
   return (
     <div className="p-4 md:p-6">
-      {/* Header */}
+      {/* HEADER */}
 
       <div className="flex flex-col [@media(min-width:350px)]:flex-row [@media(min-width:350px)]:justify-between [@media(min-width:350px)]:items-center gap-4 mb-6">
         <h1 className="text-xl md:text-2xl cursor-default font-bold text-gray-800">
@@ -140,11 +181,11 @@ const Tasks = () => {
         </button>
       </div>
 
-      {/* Search + Filters */}
+      {/* FILTER BAR */}
 
-      <div className="bg-white border border-gray-400 rounded-xl p-4 mb-6 shadow-sm">
+      <div className="bg-white border border-4gray-400 rounded-xl p-4 mb-6 shadow-sm">
         <div className="flex flex-col lg:flex-row lg:items-center gap-4">
-          {/* Search */}
+          {/* SEARCH */}
 
           <div className="relative flex-1">
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
@@ -154,24 +195,20 @@ const Tasks = () => {
             <input
               type="text"
               placeholder="Search tasks..."
-              value={search}
-              onChange={(e) => {
-                setPage(1);
-                setSearch(e.target.value);
-              }}
-              className="w-full pl-9 pr-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              className="w-full pl-9 pr-3 py-2  border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 px-3 "
             />
           </div>
 
-          {/* Filters */}
+          {/* FILTERS */}
 
           <div className="grid grid-cols-2 sm:flex sm:justify-end gap-3 w-full lg:w-auto">
             <select
-              value={priorityFilter}
-              onChange={(e) => {
-                setPage(1);
-                setPriorityFilter(e.target.value);
-              }}
+              value={priority}
+              onChange={(e) =>
+                updateParams({ priority: e.target.value, page: 1 })
+              }
               className="border cursor-pointer rounded-lg px-3 py-2 w-full sm:w-auto"
             >
               <option value="">Priority</option>
@@ -181,11 +218,10 @@ const Tasks = () => {
             </select>
 
             <select
-              value={statusFilter}
-              onChange={(e) => {
-                setPage(1);
-                setStatusFilter(e.target.value);
-              }}
+              value={status}
+              onChange={(e) =>
+                updateParams({ status: e.target.value, page: 1 })
+              }
               className="border cursor-pointer rounded-lg px-3 py-2 w-full sm:w-auto"
             >
               <option value="">Status</option>
@@ -194,13 +230,26 @@ const Tasks = () => {
               <option value="done">Done</option>
             </select>
 
+            <input
+              type="date"
+              value={deadlineFrom}
+              onChange={(e) =>
+                updateParams({ deadlineFrom: e.target.value, page: 1 })
+              }
+              className="border rounded-lg px-3 py-2 w-full sm:w-auto"
+            />
+
+            <input
+              type="date"
+              value={deadlineTo}
+              onChange={(e) =>
+                updateParams({ deadlineTo: e.target.value, page: 1 })
+              }
+              className="border rounded-lg px-3 py-2 w-full sm:w-auto"
+            />
+
             <button
-              onClick={() => {
-                setSearch("");
-                setPriorityFilter("");
-                setStatusFilter("");
-                setPage(1);
-              }}
+              onClick={clearFilters}
               className="col-span-2 sm:col-span-1 text-sm text-red-600 hover:underline cursor-pointer text-right sm:text-left"
             >
               Clear
@@ -241,13 +290,13 @@ const Tasks = () => {
                     colSpan="5"
                     className="text-center py-12 text-gray-500 text-sm"
                   >
-                    No tasks found {search && `for "${search}"`}
+                    No tasks found
                   </td>
                 </tr>
               ) : (
                 tasks.map((task) => (
                   <tr
-                    key={task.id}
+                    key={task._id}
                     className={`border-b last:border-b-0 cursor-default hover:bg-gray-50 ${
                       task.isOverdue ? "bg-red-100" : ""
                     }`}
@@ -287,7 +336,7 @@ const Tasks = () => {
                       </button>
 
                       <button
-                        onClick={() => handleDeleteClick(task.id)}
+                        onClick={() => handleDeleteClick(task._id)}
                         className="text-red-600 hover:text-red-800 cursor-pointer"
                       >
                         <FiTrash2 />
@@ -306,12 +355,12 @@ const Tasks = () => {
       <div className="md:hidden space-y-4">
         {!loading && tasks.length === 0 ? (
           <div className="text-center py-12 text-gray-500 text-sm">
-            No tasks found {search && `for "${search}"`}
+            No tasks found
           </div>
         ) : (
           tasks.map((task) => (
             <div
-              key={task.id}
+              key={task._id}
               className={`border cursor-default rounded-xl p-4 ${
                 task.isOverdue ? "bg-red-50" : "bg-white"
               }`}
@@ -334,9 +383,7 @@ const Tasks = () => {
                 <div>
                   <p className="text-gray-500 text-sm mb-1">Status</p>
                   <span
-                    className={`inline-block px-2 py-1 text-sm rounded-md ${statusColor(
-                      task.status,
-                    )}`}
+                    className={`inline-block px-2 py-1 text-sm rounded-md ${statusColor(task.status)}`}
                   >
                     {formatLabel(task.status)}
                   </span>
@@ -360,7 +407,7 @@ const Tasks = () => {
                   </button>
 
                   <button
-                    onClick={() => handleDeleteClick(task.id)}
+                    onClick={() => handleDeleteClick(task._id)}
                     className="text-red-600 hover:text-red-800 cursor-pointer"
                   >
                     <FiTrash2 />
@@ -376,7 +423,7 @@ const Tasks = () => {
 
       <div className="flex justify-between items-center mt-6">
         <button
-          onClick={() => setPage((p) => Math.max(p - 1, 1))}
+          onClick={() => updateParams({ page: Math.max(page - 1, 1) })}
           disabled={page === 1}
           className="px-4 py-2 rounded-lg border cursor-pointer text-sm text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 transition"
         >
@@ -388,19 +435,21 @@ const Tasks = () => {
         </span>
 
         <button
-          onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
+          onClick={() => updateParams({ page: Math.min(page + 1, totalPages) })}
           disabled={page === totalPages}
           className="px-4 py-2 rounded-lg border cursor-pointer text-sm text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 transition"
         >
           Next
         </button>
       </div>
+
       <TaskModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         task={selectedTask}
         onSave={fetchTasks}
       />
+
       <ConfirmDialog
         isOpen={confirmOpen}
         message="Are you sure you want to delete this task?"

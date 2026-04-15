@@ -5,21 +5,9 @@ export const getTaskStats = async () => {
   return response.data;
 };
 
-export const getTasks = async (
-  page = 1,
-  limit = 10,
-  search = "",
-  priority = "",
-  status = "",
-) => {
+export const getTasks = async (params) => {
   const response = await api.get("/api/tasks", {
-    params: {
-      page,
-      limit,
-      search,
-      priority,
-      status,
-    },
+    params,
   });
 
   return response.data;
