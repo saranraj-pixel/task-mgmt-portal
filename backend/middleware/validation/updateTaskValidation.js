@@ -9,6 +9,7 @@ exports.updateTaskValidation = [
     .withMessage("Status must be todo, in progress, or done"),
 
   body("deadline")
+    .optional()
     .isISO8601()
     .withMessage("Deadline must be valid date")
     .custom((value) => {

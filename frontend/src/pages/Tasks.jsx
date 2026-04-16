@@ -56,11 +56,13 @@ const Tasks = () => {
   // Debounce search
   useEffect(() => {
     const timer = setTimeout(() => {
-      updateParams({ search: searchInput, page: 1 });
+      if (searchInput !== search) {
+        updateParams({ search: searchInput, page: 1 });
+      }
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [searchInput, updateParams]);
+  }, [searchInput, search, updateParams]);
 
   // Fetch tasks
   const fetchTasks = useCallback(async () => {
@@ -183,7 +185,7 @@ const Tasks = () => {
 
       {/* FILTER BAR */}
 
-      <div className="bg-white border border-4gray-400 rounded-xl p-4 mb-6 shadow-sm">
+      <div className="bg-white border border-gray-400 rounded-xl p-4 mb-6 shadow-sm">
         <div className="flex flex-col lg:flex-row lg:items-center gap-4">
           {/* SEARCH */}
 
@@ -203,7 +205,7 @@ const Tasks = () => {
 
           {/* FILTERS */}
 
-          <div className="grid grid-cols-2 sm:flex sm:justify-end gap-3 w-full lg:w-auto">
+          <div className="grid grid-cols-2 md:flex md:justify-end gap-3 w-full lg:w-auto">
             <select
               value={priority}
               onChange={(e) =>
@@ -250,7 +252,7 @@ const Tasks = () => {
 
             <button
               onClick={clearFilters}
-              className="col-span-2 sm:col-span-1 text-sm text-red-600 hover:underline cursor-pointer text-right sm:text-left"
+              className="col-span-2 md:col-auto md:mr-auto text-sm text-red-600 hover:underline cursor-pointer text-right md:text-left"
             >
               Clear
             </button>

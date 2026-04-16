@@ -169,8 +169,6 @@ export default function TaskBoard() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 md:px-6 py-6">
-      <h1 className="text-2xl font-bold mb-6">Task Board</h1>
-
       <DndContext
         sensors={sensors}
         collisionDetection={pointerWithin}
