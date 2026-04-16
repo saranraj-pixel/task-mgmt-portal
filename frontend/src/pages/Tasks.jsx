@@ -178,7 +178,7 @@ const Tasks = () => {
           onClick={openCreateModal}
           className="flex items-center justify-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition w-full [@media(min-width:350px)]:w-auto cursor-pointer"
         >
-          <FiPlus />
+          <FiPlus size={20} />
           Add Task
         </button>
       </div>
@@ -307,7 +307,7 @@ const Tasks = () => {
 
                     <td className="p-4">
                       <span
-                        className={`inline-flex items-center whitespace-nowrap px-3 py-1 text-md rounded-full ${priorityColor(
+                        className={`inline-flex font-medium items-center whitespace-nowrap px-3 py-1 text-md rounded-full ${priorityColor(
                           task.priority,
                         )}`}
                       >
@@ -317,7 +317,7 @@ const Tasks = () => {
 
                     <td className="p-4">
                       <span
-                        className={`px-3 py-1 text-md rounded-full ${statusColor(
+                        className={`px-3 py-1 text-md font-medium rounded-full ${statusColor(
                           task.status,
                         )}`}
                       >
@@ -325,7 +325,7 @@ const Tasks = () => {
                       </span>
                     </td>
 
-                    <td className="p-4 text-md text-gray-600">
+                    <td className="p-4 text-md font-medium text-gray-600">
                       {formatDate(task.deadline)}
                     </td>
 
@@ -372,9 +372,11 @@ const Tasks = () => {
               {/* Priority + Status */}
               <div className="grid grid-cols-2 gap-3 text-sm mb-3">
                 <div>
-                  <p className="text-gray-500 text-sm mb-1">Priority</p>
+                  <p className="text-gray-500 font-semibold text-sm mb-1">
+                    Priority
+                  </p>
                   <span
-                    className={`inline-block px-2 py-1 text-sm rounded-md ${priorityColor(
+                    className={`inline-block font-medium px-2 py-1 text-sm rounded-md ${priorityColor(
                       task.priority,
                     )}`}
                   >
@@ -383,9 +385,11 @@ const Tasks = () => {
                 </div>
 
                 <div>
-                  <p className="text-gray-500 text-sm mb-1">Status</p>
+                  <p className="text-gray-500 font-semibold text-sm mb-1">
+                    Status
+                  </p>
                   <span
-                    className={`inline-block px-2 py-1 text-sm rounded-md ${statusColor(task.status)}`}
+                    className={`inline-block font-medium px-2 py-1 text-sm rounded-md ${statusColor(task.status)}`}
                   >
                     {formatLabel(task.status)}
                   </span>
@@ -395,8 +399,10 @@ const Tasks = () => {
               {/* Deadline */}
               <div className="flex items-center justify-between mt-3">
                 <p className="text-sm text-gray-600 flex gap-2">
-                  <span className="text-gray-500">Deadline:</span>
-                  {formatDate(task.deadline)}
+                  <span className="font-semibold text-gray-500">Deadline:</span>
+                  <span className="font-medium">
+                    {formatDate(task.deadline)}
+                  </span>
                 </p>
 
                 {/* Actions */}
@@ -427,19 +433,19 @@ const Tasks = () => {
         <button
           onClick={() => updateParams({ page: Math.max(page - 1, 1) })}
           disabled={page === 1}
-          className="px-4 py-2 rounded-lg border cursor-pointer text-sm text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 transition"
+          className="px-4 py-2 font-bold rounded-lg border cursor-pointer text-sm text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
         >
           Previous
         </button>
 
-        <span className="text-sm cursor-default text-gray-600">
+        <span className="text-sm font-medium cursor-default text-gray-600">
           Page {page} of {totalPages}
         </span>
 
         <button
           onClick={() => updateParams({ page: Math.min(page + 1, totalPages) })}
           disabled={page === totalPages}
-          className="px-4 py-2 rounded-lg border cursor-pointer text-sm text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 transition"
+          className="px-4 py-2 font-bold rounded-lg border cursor-pointer text-sm text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
         >
           Next
         </button>

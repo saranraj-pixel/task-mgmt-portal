@@ -12,11 +12,11 @@ const Navbar = () => {
       <div className="flex justify-between items-center p-4 mx-auto">
         {/* Logo */}
         <Link to="/dashboard">
-          <h1 className="text-lg font-semibold tracking-wide">Task Portal</h1>
+          <h1 className="text-lg font-bold tracking-wide">Task Portal</h1>
         </Link>
 
         {/* Desktop Menu */}
-        <div className="hidden md:flex gap-8 font-medium">
+        <div className="hidden md:flex gap-8 font-bold">
           <Link to="/dashboard" className="hover:text-indigo-200 transition">
             Dashboard
           </Link>
@@ -41,7 +41,7 @@ const Navbar = () => {
 
             <button
               onClick={logout}
-              className="bg-white text-indigo-600 cursor-pointer px-3 py-1 rounded hover:bg-indigo-50 transition"
+              className="bg-white text-indigo-600 cursor-pointer font-bold px-3 py-1 rounded hover:bg-indigo-50 transition"
             >
               Logout
             </button>
@@ -120,11 +120,13 @@ const Navbar = () => {
         {/* User Section */}
         {isAuthenticated && (
           <div className="p-6 ">
-            <p className="mb-3 text-slate-600 font-medium">{user?.name}</p>
+            <p className="mb-3 text-slate-600 cursor-default font-medium">
+              {user?.name}
+            </p>
 
             <button
               onClick={logout}
-              className="w-full bg-indigo-600 text-white cursor-pointer py-2 rounded hover:bg-indigo-700 transition"
+              className="w-full bg-indigo-600 font-bold text-white cursor-pointer py-2 rounded hover:bg-indigo-700 transition"
             >
               Logout
             </button>

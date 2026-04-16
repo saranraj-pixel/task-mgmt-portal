@@ -3,7 +3,10 @@ const { body } = require("express-validator");
 exports.createTaskValidation = [
   body("title").notEmpty().withMessage("Title is required"),
 
-  body("description").notEmpty().withMessage("Description is required"),
+  body("description")
+    .optional()
+    .notEmpty()
+    .withMessage("Description is required"),
 
   body("priority")
     .isIn(["low", "medium", "high"])
