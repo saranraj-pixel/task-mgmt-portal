@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { getTaskStats } from "../services/taskService";
 import {
   FiLayers,
@@ -161,9 +162,11 @@ const Dashboard = () => {
             Start by creating your first task
           </p>
 
-          <button className="bg-blue-600 text-white font-bold cursor-pointer px-4 py-2 rounded">
-            Create your first task
-          </button>
+          <Link to="/tasks">
+            <button className="bg-blue-600 text-white font-bold cursor-pointer px-4 py-2 rounded">
+              Create your first task
+            </button>
+          </Link>
         </div>
       )}
 
