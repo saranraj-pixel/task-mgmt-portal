@@ -1,8 +1,9 @@
 const mongoose = require("mongoose");
+const logger = require("../utils/logger");
 
 const connectDB = async () => {
   if (!process.env.MONGO_URI) {
-    console.error("❌ MONGO_URI is not defined in .env");
+    logger.error("❌ MONGO_URI is not defined in .env");
     process.exit(1);
   }
 
@@ -11,31 +12,45 @@ const connectDB = async () => {
       serverSelectionTimeoutMS: 5000, // fail fast if DB not reachable
     });
 
-    console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
+    logger.info(`✅ MongoDB Connected: ${conn.connection.host}`);
   } catch (error) {
-    console.error(`❌ MongoDB Connection Error: ${error.message}`);
+    logger.error("❌ MongoDB Connection Error", {
+      message: error.message,
+      stack: error.stack,
+    });
     process.exit(1);
   }
 };
 
 // 🔁 MongoDB Connection Events
 mongoose.connection.on("connected", () => {
-  console.log("🟢 Mongoose connected");
+  logger.info("🟢 Mongoose connected");
 });
 
 mongoose.connection.on("error", (err) => {
-  console.error(`🔴 Mongoose error: ${err.message}`);
+  logger.error("🔴 Mongoose connection error", {
+    message: err.message,
+    stack: err.stack,
+  });
 });
 
 mongoose.connection.on("disconnected", () => {
-  console.warn("🟡 Mongoose disconnected");
+  logger.warn("🟡 Mongoose disconnected");
 });
 
 // 🛑 Graceful Shutdown
 process.on("SIGINT", async () => {
-  await mongoose.connection.close();
-  console.log("🛑 MongoDB connection closed due to app termination");
-  process.exit(0);
+  try {
+    await mongoose.connection.close();
+    logger.info("🛑 MongoDB connection closed due to app termination");
+    process.exit(0);
+  } catch (error) {
+    logger.error("Error during MongoDB shutdown", {
+      message: error.message,
+      stack: error.stack,
+    });
+    process.exit(1);
+  }
 });
 
 module.exports = connectDB;

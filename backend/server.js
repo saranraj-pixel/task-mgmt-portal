@@ -5,6 +5,7 @@ const connectDB = require("./config/db");
 const authRoutes = require("./routes/authRoutes");
 const taskRoutes = require("./routes/taskRoute");
 const errorHandler = require("./middleware/errorHandler");
+const logger = require("./utils/logger");
 
 const PORT = process.env.PORT || 6000;
 
@@ -51,10 +52,13 @@ const serverUp = async () => {
   try {
     await connectDB();
     app.listen(PORT, () => {
-      console.log(`Server running port on ${PORT}`);
+      logger.info(`Server running port on ${PORT}`);
     });
   } catch (error) {
-    console.error("Server failed", error.message);
+    logger.error("Server failed", {
+      message: error.message,
+      stack: error.stack,
+    });
     process.exit(1);
   }
 };
