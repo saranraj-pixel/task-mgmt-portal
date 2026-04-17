@@ -5,6 +5,7 @@ import { FiEdit, FiTrash2, FiPlus } from "react-icons/fi";
 import TaskModal from "../components/TaskModal";
 import ConfirmDialog from "../components/ConfirmDialog";
 import { toast } from "react-toastify";
+import { logError } from "../../utils/logger";
 
 const Tasks = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -83,7 +84,14 @@ const Tasks = () => {
       setTotalPages(data.totalPages);
       setTotalCount(data.totalCount);
     } catch (error) {
-      console.error("Error fetching tasks", error);
+      logError(error, {
+        action: "FETCH_TASKS_LIST_FAILED",
+        page,
+        search,
+        priority,
+        status,
+        hasDeadlineFilter: !!(deadlineFrom || deadlineTo),
+      });
     } finally {
       setLoading(false);
     }

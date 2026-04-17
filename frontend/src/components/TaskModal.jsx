@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { createTask, updateTask } from "../services/taskService";
 import { toast } from "react-toastify";
+import { logError } from "../../utils/logger";
 
 const TaskModal = ({ isOpen, onClose, task, onSave }) => {
   const isEdit = !!task;
@@ -47,7 +48,11 @@ const TaskModal = ({ isOpen, onClose, task, onSave }) => {
       onClose();
     } catch (error) {
       toast.error("Something went wrong");
-      console.error(error);
+      logError(error, {
+        action: isEdit ? "UPDATE_TASK" : "CREATE_TASK",
+        payload: data,
+        taskId: task?.id,
+      });
     }
   };
 

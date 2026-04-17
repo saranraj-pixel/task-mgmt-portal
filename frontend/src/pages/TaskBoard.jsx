@@ -18,6 +18,7 @@ import {
 
 import KanbanColumn from "../components/KanbanColumn";
 import DragOverlayCard from "../components/DragOverlayCard";
+import { logError } from "../../utils/logger";
 
 const COLUMN_CONFIG = [
   { id: "todo", title: "To Do" },
@@ -67,7 +68,11 @@ export default function TaskBoard() {
 
         setColumns(grouped);
       } catch (err) {
-        console.error("Failed to load tasks", err);
+        logError(err, {
+          action: "FETCH_TASKS_FAILED",
+          page: 1,
+          limit: 1000,
+        });
       }
     };
 
@@ -163,7 +168,12 @@ export default function TaskBoard() {
     try {
       await updateTask(active.id, { status: targetCol });
     } catch (err) {
-      console.error("Failed to update task", err);
+      logError(err, {
+        action: "DRAG_TASK_UPDATE_FAILED",
+        taskId: active.id,
+        from: sourceCol,
+        to: targetCol,
+      });
     }
   };
 

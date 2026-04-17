@@ -2,6 +2,7 @@
 
 import { createContext, useReducer, useContext, useEffect } from "react";
 import { jwtDecode } from "jwt-decode";
+import { logError } from "../../utils/logger";
 
 const AuthContext = createContext(null);
 
@@ -90,7 +91,11 @@ export const AuthProvider = ({ children }) => {
         });
       }
     } catch (error) {
-      console.error("JWT decode failed:", error);
+      logError(error, {
+        action: "JWT_DECODE_FAILED",
+        hasToken: !!token,
+      });
+
       logout();
     }
   }, []);
