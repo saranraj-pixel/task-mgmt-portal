@@ -92,7 +92,7 @@ const Profile = () => {
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-10 space-y-8">
+    <div className="max-w-4xl mx-auto px-4 py-5 space-y-5">
       {/* Profile Header */}
       <div className="bg-linear-to-r from-blue-600 to-indigo-600 rounded-2xl shadow-lg p-4 sm:p-6 text-white flex items-center gap-3 sm:gap-6 flex-wrap sm:flex-nowrap">
         {/* Avatar */}
@@ -102,7 +102,7 @@ const Profile = () => {
 
         {/* Profile Info */}
         <div className="flex-1 min-w-0">
-          <h2 className="text-base sm:text-xl font-semibold flex items-center gap-2 sm:gap-3 flex-wrap">
+          <h2 className="text-base sm:text-xl mb-3 font-semibold flex items-center gap-2 sm:gap-3 flex-wrap">
             {user?.name}
 
             {!editMode && (
@@ -138,7 +138,7 @@ const Profile = () => {
             onSubmit={handleSubmit(onProfileUpdate)}
             className="flex flex-col gap-3"
           >
-            <div className="flex-1">
+            <div className="flex-1 mt-5">
               <FormInput
                 label="Name"
                 type="text"
@@ -150,7 +150,7 @@ const Profile = () => {
             </div>
 
             <div className="flex gap-2 justify-end items-end">
-              <button className="bg-blue-600 hover:bg-blue-700 text-white cursor-pointer px-5 py-2 rounded-md">
+              <button className="bg-blue-600 hover:bg-blue-700 text-white font-bold cursor-pointer px-5 py-2 rounded-md">
                 Save
               </button>
 
@@ -167,8 +167,8 @@ const Profile = () => {
       )}
 
       {/* Password Section */}
-      <div className="bg-white shadow rounded-xl p-5">
-        <h3 className="text-lg font-semibold mb-5">Security Settings</h3>
+      <div className="bg-white shadow rounded-xl mt-10">
+        <h3 className="text-lg font-semibold mb-6">Security Settings</h3>
 
         <form
           onSubmit={handlePasswordSubmit(onPasswordChange)}
@@ -213,7 +213,7 @@ const Profile = () => {
           <div className="md:col-span-2 flex justify-end pt-3">
             <button
               disabled={passwordLoading}
-              className="bg-green-500 hover:bg-green-600 text-white cursor-pointer px-4 py-3 rounded-md shadow"
+              className="bg-green-500 hover:bg-green-600 text-white font-bold cursor-pointer px-4 py-3 rounded-md shadow"
             >
               {passwordLoading ? "Updating..." : "Update Password"}
             </button>

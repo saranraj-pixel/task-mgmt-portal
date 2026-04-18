@@ -184,7 +184,7 @@ const Tasks = () => {
 
         <button
           onClick={openCreateModal}
-          className="flex items-center justify-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition w-full [@media(min-width:350px)]:w-auto cursor-pointer"
+          className="flex items-center font-bold justify-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition w-full [@media(min-width:350px)]:w-auto cursor-pointer"
         >
           <FiPlus size={20} />
           Add Task
@@ -246,7 +246,7 @@ const Tasks = () => {
               onChange={(e) =>
                 updateParams({ deadlineFrom: e.target.value, page: 1 })
               }
-              className="border rounded-lg px-3 py-2 w-full sm:w-auto"
+              className="border cursor-pointer rounded-lg px-3 py-2 w-full sm:w-auto"
             />
 
             <input
@@ -255,12 +255,12 @@ const Tasks = () => {
               onChange={(e) =>
                 updateParams({ deadlineTo: e.target.value, page: 1 })
               }
-              className="border rounded-lg px-3 py-2 w-full sm:w-auto"
+              className="border cursor-pointer rounded-lg px-3 py-2 w-full sm:w-auto"
             />
 
             <button
               onClick={clearFilters}
-              className="col-span-2 md:col-auto md:mr-auto text-sm text-red-600 hover:underline cursor-pointer text-right md:text-left"
+              className="col-span-2 md:col-auto md:mr-auto text-base text-red-600 hover:underline cursor-pointer text-right md:text-left"
             >
               Clear
             </button>
@@ -419,14 +419,14 @@ const Tasks = () => {
                     onClick={() => openEditModal(task)}
                     className="text-blue-600 hover:text-blue-800 cursor-pointer"
                   >
-                    <FiEdit />
+                    <FiEdit size={24} />
                   </button>
 
                   <button
                     onClick={() => handleDeleteClick(task._id)}
                     className="text-red-600 hover:text-red-800 cursor-pointer"
                   >
-                    <FiTrash2 />
+                    <FiTrash2 size={24} />
                   </button>
                 </div>
               </div>

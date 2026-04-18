@@ -135,7 +135,7 @@ const Dashboard = () => {
       {loading && (
         <>
           {/* Cards Skeleton */}
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 mb-8">
             {[...Array(5)].map((_, i) => (
               <div
                 key={i}
@@ -174,7 +174,7 @@ const Dashboard = () => {
       {!loading && stats?.totalTasks > 0 && (
         <>
           {/* STATS CARDS */}
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 mb-8">
             {statCards.map((card, i) => (
               <div
                 key={i}
