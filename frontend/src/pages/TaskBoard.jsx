@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { getTasks, updateTask } from "../services/taskService";
+import Skeleton from "../components/Skeleton";
 
 import {
   DndContext,
@@ -35,6 +36,7 @@ export default function TaskBoard() {
 
   const [activeTask, setActiveTask] = useState(null);
   const [overColumn, setOverColumn] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -47,6 +49,7 @@ export default function TaskBoard() {
   useEffect(() => {
     const fetchTasks = async () => {
       try {
+        setLoading(true);
         const res = await getTasks({
           page: 1,
           limit: 1000,
@@ -73,6 +76,8 @@ export default function TaskBoard() {
           page: 1,
           limit: 1000,
         });
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -176,6 +181,39 @@ export default function TaskBoard() {
       });
     }
   };
+
+  if (loading) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 md:px-6 py-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {COLUMN_CONFIG.map((col) => (
+            <div key={col.id} className="bg-white rounded-xl overflow-hidden shadow-sm border border-gray-200">
+              {/* Header Skeleton */}
+              <div className="h-14 bg-gray-100 flex items-center px-4">
+                <Skeleton className="h-5 w-32" />
+                <div className="ml-auto">
+                    <Skeleton className="h-6 w-8 rounded-full" />
+                </div>
+              </div>
+              
+              {/* Cards Skeleton */}
+              <div className="p-4 space-y-4">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="border rounded-lg p-4 space-y-3">
+                    <Skeleton className="h-4 w-3/4" />
+                    <div className="flex justify-between items-center">
+                      <Skeleton className="h-5 w-16" />
+                      <Skeleton className="h-4 w-20" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 md:px-6 py-6">

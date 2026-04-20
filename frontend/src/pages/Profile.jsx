@@ -8,7 +8,7 @@ import {
 import { toast } from "react-toastify";
 import { FiEdit2, FiLock } from "react-icons/fi";
 import FormInput from "../components/FormInput";
-import Loader from "../components/Loader";
+import Skeleton from "../components/Skeleton";
 
 const Profile = () => {
   const [user, setUser] = useState(null);
@@ -88,7 +88,41 @@ const Profile = () => {
   };
 
   if (loading) {
-    return <Loader />;
+    return (
+      <div className="max-w-4xl mx-auto px-4 py-5 space-y-5 animate-pulse">
+        {/* Profile Header Skeleton */}
+        <div className="bg-gray-200 rounded-2xl p-4 sm:p-6 flex items-center gap-3 sm:gap-6 flex-wrap sm:flex-nowrap">
+          <Skeleton className="w-12 h-12 sm:w-16 sm:h-16 md:w-18 md:h-18 rounded-full bg-gray-300" />
+          <div className="flex-1 space-y-3">
+            <Skeleton className="h-6 w-1/3 bg-gray-300" />
+            <Skeleton className="h-4 w-1/2 bg-gray-300" />
+            <Skeleton className="h-3 w-1/4 bg-gray-300" />
+          </div>
+        </div>
+
+        {/* Security Section Skeleton */}
+        <div className="bg-white shadow rounded-xl p-6 mt-10 space-y-6">
+          <Skeleton className="h-6 w-40 bg-gray-200" />
+          <div className="grid md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-24 bg-gray-200" />
+              <Skeleton className="h-10 w-full bg-gray-100" />
+            </div>
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-24 bg-gray-200" />
+              <Skeleton className="h-10 w-full bg-gray-100" />
+            </div>
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-24 bg-gray-200" />
+              <Skeleton className="h-10 w-full bg-gray-100" />
+            </div>
+          </div>
+          <div className="flex justify-end">
+            <Skeleton className="h-10 w-32 bg-gray-200 rounded-md" />
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -167,7 +201,7 @@ const Profile = () => {
       )}
 
       {/* Password Section */}
-      <div className="bg-white shadow rounded-xl mt-10">
+      <div className="mt-10">
         <h3 className="text-lg font-semibold mb-6">Security Settings</h3>
 
         <form

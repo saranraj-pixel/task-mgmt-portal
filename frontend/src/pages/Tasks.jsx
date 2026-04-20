@@ -7,10 +7,12 @@ import ConfirmDialog from "../components/ConfirmDialog";
 import { toast } from "react-toastify";
 import { logError } from "../../utils/logger";
 import CustomDatePicker from "../components/CustomDatePicker";
+import Skeleton from "../components/Skeleton";
+
 
 const Tasks = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-
+ 
   const [tasks, setTasks] = useState([]);
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
@@ -179,89 +181,113 @@ const Tasks = () => {
       {/* HEADER */}
 
       <div className="flex flex-col [@media(min-width:350px)]:flex-row [@media(min-width:350px)]:justify-between [@media(min-width:350px)]:items-center gap-4 mb-6">
-        <h1 className="text-xl md:text-2xl cursor-default font-bold text-gray-800">
-          Tasks <span className="text-blue-500">({totalCount})</span>
-        </h1>
+        {loading ? (
+          <>
+            <Skeleton className="h-8 w-40" />
+            <Skeleton className="h-10 w-full [@media(min-width:350px)]:w-32" />
+          </>
+        ) : (
+          <>
+            <h1 className="text-xl md:text-2xl cursor-default font-bold text-gray-800">
+              Tasks <span className="text-blue-500">({totalCount})</span>
+            </h1>
 
-        <button
-          onClick={openCreateModal}
-          className="flex items-center font-bold justify-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition w-full [@media(min-width:350px)]:w-auto cursor-pointer"
-        >
-          <FiPlus size={20} />
-          Add Task
-        </button>
+            <button
+              onClick={openCreateModal}
+              className="flex items-center font-bold justify-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition w-full [@media(min-width:350px)]:w-auto cursor-pointer"
+            >
+              <FiPlus size={20} />
+              Add Task
+            </button>
+          </>
+        )}
       </div>
+
 
       {/* FILTER BAR */}
 
       <div className="bg-white border border-gray-400 rounded-xl p-4 mb-6 shadow-sm">
-        <div className="flex flex-col lg:flex-row lg:items-center gap-4">
-          {/* SEARCH */}
-
-          <div className="relative flex-1">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
-              🔍
-            </span>
-
-            <input
-              type="text"
-              placeholder="Search tasks..."
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              className="w-full pl-9 pr-3 py-2  border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 px-3 "
-            />
+        {loading ? (
+          <div className="flex flex-col lg:flex-row lg:items-center gap-4">
+            <Skeleton className="h-10 w-full lg:flex-1" />
+            <div className="grid grid-cols-2 md:flex md:justify-end gap-3 w-full lg:w-auto">
+              <Skeleton className="h-10 w-full sm:w-24" />
+              <Skeleton className="h-10 w-full sm:w-24" />
+              <Skeleton className="h-10 w-full sm:w-32" />
+              <Skeleton className="h-10 w-full sm:w-32" />
+              <Skeleton className="h-10 w-16 hidden md:block" />
+            </div>
           </div>
+        ) : (
+          <div className="flex flex-col lg:flex-row lg:items-center gap-4">
+            {/* SEARCH */}
 
-          {/* FILTERS */}
+            <div className="relative flex-1">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                🔍
+              </span>
 
-          <div className="grid grid-cols-2 md:flex md:justify-end gap-3 w-full lg:w-auto">
-            <select
-              value={priority}
-              onChange={(e) =>
-                updateParams({ priority: e.target.value, page: 1 })
-              }
-              className="border cursor-pointer rounded-lg px-3 py-2 w-full sm:w-auto"
-            >
-              <option value="">Priority</option>
-              <option value="low">Low</option>
-              <option value="medium">Medium</option>
-              <option value="high">High</option>
-            </select>
+              <input
+                type="text"
+                placeholder="Search tasks..."
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                className="w-full pl-9 pr-3 py-2  border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 px-3 "
+              />
+            </div>
 
-            <select
-              value={status}
-              onChange={(e) =>
-                updateParams({ status: e.target.value, page: 1 })
-              }
-              className="border cursor-pointer rounded-lg px-3 py-2 w-full sm:w-auto"
-            >
-              <option value="">Status</option>
-              <option value="todo">Todo</option>
-              <option value="in-progress">In Progress</option>
-              <option value="done">Done</option>
-            </select>
+            {/* FILTERS */}
 
-            <CustomDatePicker
-              value={deadlineFrom}
-              onChange={(val) => updateParams({ deadlineFrom: val, page: 1 })}
-              placeholder="From date"
-            />
+            <div className="grid grid-cols-2 md:flex md:justify-end gap-3 w-full lg:w-auto">
+              <select
+                value={priority}
+                onChange={(e) =>
+                  updateParams({ priority: e.target.value, page: 1 })
+                }
+                className="border cursor-pointer rounded-lg px-3 py-2 w-full sm:w-auto"
+              >
+                <option value="">Priority</option>
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+              </select>
 
-            <CustomDatePicker
-              value={deadlineTo}
-              onChange={(val) => updateParams({ deadlineTo: val, page: 1 })}
-              placeholder="To date"
-            />
+              <select
+                value={status}
+                onChange={(e) =>
+                  updateParams({ status: e.target.value, page: 1 })
+                }
+                className="border cursor-pointer rounded-lg px-3 py-2 w-full sm:w-auto"
+              >
+                <option value="">Status</option>
+                <option value="todo">Todo</option>
+                <option value="in-progress">In Progress</option>
+                <option value="done">Done</option>
+              </select>
 
-            <button
-              onClick={clearFilters}
-              className="col-span-2 md:col-auto md:mr-auto text-base text-red-600 hover:underline cursor-pointer text-right md:text-left"
-            >
-              Clear
-            </button>
+              <CustomDatePicker
+                value={deadlineFrom}
+                onChange={(val) => updateParams({ deadlineFrom: val, page: 1 })}
+                placeholder="From date"
+              />
+
+              <CustomDatePicker
+                value={deadlineTo}
+                onChange={(val) => updateParams({ deadlineTo: val, page: 1 })}
+                placeholder="To date"
+              />
+
+              <button
+                onClick={clearFilters}
+                className="col-span-2 md:col-auto md:mr-auto text-base text-red-600 hover:underline cursor-pointer text-right md:text-left"
+              >
+                Clear
+              </button>
+            </div>
           </div>
-        </div>
+        )}
       </div>
+
 
       {/* DESKTOP TABLE */}
 
@@ -289,7 +315,30 @@ const Tasks = () => {
             </thead>
 
             <tbody>
-              {!loading && tasks.length === 0 ? (
+              {loading ? (
+                [...Array(5)].map((_, i) => (
+                  <tr key={i} className="border-b last:border-b-0">
+                    <td className="p-4">
+                      <Skeleton className="h-5 w-3/4" />
+                    </td>
+                    <td className="p-4">
+                      <Skeleton className="h-8 w-20 rounded-full" />
+                    </td>
+                    <td className="p-4">
+                      <Skeleton className="h-8 w-24 rounded-full" />
+                    </td>
+                    <td className="p-4">
+                      <Skeleton className="h-5 w-24" />
+                    </td>
+                    <td className="p-4">
+                      <div className="flex gap-3">
+                        <Skeleton className="h-6 w-6" />
+                        <Skeleton className="h-6 w-6" />
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              ) : tasks.length === 0 ? (
                 <tr>
                   <td
                     colSpan="5"
@@ -358,7 +407,30 @@ const Tasks = () => {
       {/* MOBILE CARDS */}
 
       <div className="md:hidden space-y-4">
-        {!loading && tasks.length === 0 ? (
+        {loading ? (
+          [...Array(3)].map((_, i) => (
+            <div key={i} className="border rounded-xl p-4 bg-white">
+              <Skeleton className="h-6 w-3/4 mb-3" />
+              <div className="grid grid-cols-2 gap-3 mb-3">
+                <div>
+                  <Skeleton className="h-4 w-16 mb-1" />
+                  <Skeleton className="h-8 w-20" />
+                </div>
+                <div>
+                  <Skeleton className="h-4 w-16 mb-1" />
+                  <Skeleton className="h-8 w-20" />
+                </div>
+              </div>
+              <div className="flex justify-between items-center mt-3">
+                <Skeleton className="h-5 w-32" />
+                <div className="flex gap-4">
+                  <Skeleton className="h-8 w-8" />
+                  <Skeleton className="h-8 w-8" />
+                </div>
+              </div>
+            </div>
+          ))
+        ) : tasks.length === 0 ? (
           <div className="text-center py-12 text-gray-500 text-sm">
             No tasks found
           </div>
@@ -429,6 +501,7 @@ const Tasks = () => {
           ))
         )}
       </div>
+
 
       {/* PAGINATION */}
 
