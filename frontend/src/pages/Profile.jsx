@@ -9,6 +9,7 @@ import { toast } from "react-toastify";
 import { FiEdit2, FiLock } from "react-icons/fi";
 import FormInput from "../components/FormInput";
 import Skeleton from "../components/Skeleton";
+import { Helmet } from "react-helmet-async";
 
 const Profile = () => {
   const [user, setUser] = useState(null);
@@ -126,6 +127,14 @@ const Profile = () => {
   }
 
   return (
+    <>
+    <Helmet>
+        <title> Profile | Task Manager</title>
+        <meta
+          name="description"
+          content="Overview of your profile page you can edit name and change password none editable email "
+        />
+      </Helmet>
     <div className="max-w-4xl mx-auto px-4 py-5 space-y-5">
       {/* Profile Header */}
       <div className="bg-linear-to-r from-blue-600 to-indigo-600 rounded-2xl shadow-lg p-4 sm:p-6 text-white flex items-center gap-3 sm:gap-6 flex-wrap sm:flex-nowrap">
@@ -255,6 +264,8 @@ const Profile = () => {
         </form>
       </div>
     </div>
+  </>
+
   );
 };
 

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Helmet } from "react-helmet-async";
 import { Link } from "react-router-dom";
 import { getTaskStats } from "../services/taskService";
 import {
@@ -116,6 +117,15 @@ const Dashboard = () => {
   };
 
   return (
+    <>
+     <Helmet>
+        <title> Dashboard | Task Manager</title>
+        <meta
+          name="description"
+          content="Overview of your tasks and productivity stats"
+        />
+      </Helmet>
+    
     <div className="p-6">
       {/* ERROR */}
       {error && (
@@ -164,7 +174,7 @@ const Dashboard = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="bg-white border rounded-lg p-5 shadow-sm">
               <Skeleton className="h-6 w-40 mb-6" />
-              <div className="flex items-center justify-center h-[300px]">
+              <div className="flex items-center justify-center h-75">
                 <div className="h-48 w-48 rounded-full bg-gray-200 animate-pulse flex items-center justify-center">
                     <div className="h-24 w-24 rounded-full bg-white shadow-inner" />
                 </div>
@@ -173,7 +183,7 @@ const Dashboard = () => {
 
             <div className="bg-white border rounded-lg p-5 shadow-sm">
               <Skeleton className="h-6 w-40 mb-6" />
-              <div className="flex items-end justify-around h-[300px] pt-10 px-4">
+              <div className="flex items-end justify-around h-75 pt-10 px-4">
                 <Skeleton className="h-32 w-12 md:w-16" />
                 <Skeleton className="h-48 w-12 md:w-16" />
                 <Skeleton className="h-24 w-12 md:w-16" />
@@ -287,6 +297,7 @@ const Dashboard = () => {
         </>
       )}
     </div>
+  </>
   );
 };
 

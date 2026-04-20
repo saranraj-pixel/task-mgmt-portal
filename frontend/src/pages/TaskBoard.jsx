@@ -20,6 +20,7 @@ import {
 import KanbanColumn from "../components/KanbanColumn";
 import DragOverlayCard from "../components/DragOverlayCard";
 import { logError } from "../../utils/logger";
+import { Helmet } from "react-helmet-async";
 
 const COLUMN_CONFIG = [
   { id: "todo", title: "To Do" },
@@ -216,6 +217,14 @@ export default function TaskBoard() {
   }
 
   return (
+    <>
+    <Helmet>
+        <title> Board | Task Manager</title>
+        <meta
+          name="description"
+          content="Overview of your board todo, in progress, done everything you can see and drag and drop according to the task stats "
+        />
+      </Helmet>
     <div className="max-w-7xl mx-auto px-4 md:px-6 py-6">
       <DndContext
         sensors={sensors}
@@ -247,5 +256,7 @@ export default function TaskBoard() {
         </DragOverlay>
       </DndContext>
     </div>
+  </>
+
   );
 }

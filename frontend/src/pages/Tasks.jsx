@@ -8,6 +8,7 @@ import { toast } from "react-toastify";
 import { logError } from "../../utils/logger";
 import CustomDatePicker from "../components/CustomDatePicker";
 import Skeleton from "../components/Skeleton";
+import { Helmet } from "react-helmet-async";
 
 
 const Tasks = () => {
@@ -177,6 +178,15 @@ const Tasks = () => {
   };
 
   return (
+    <>
+     <Helmet>
+        <title> Tasks | Task Manager</title>
+        <meta
+          name="description"
+          content="Overview of your tasks and priority, status, deadline everything you can see as a list "
+        />
+      </Helmet>
+        
     <div className="p-4 md:p-6">
       {/* HEADER */}
 
@@ -545,6 +555,7 @@ const Tasks = () => {
         onCancel={() => setConfirmOpen(false)}
       />
     </div>
+  </>
   );
 };
 
