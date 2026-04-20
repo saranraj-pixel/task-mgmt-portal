@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useState } from "react";
 import { FiMenu, FiX } from "react-icons/fi";
+import Logo from "../assets/Logo.png";
 
 const Navbar = () => {
   const { user, isAuthenticated, logout } = useAuth();
@@ -12,7 +13,10 @@ const Navbar = () => {
       <div className="flex justify-between items-center p-4 mx-auto">
         {/* Logo */}
         <Link to="/dashboard">
-          <h1 className="text-lg font-bold tracking-wide">Task Portal</h1>
+          <div className="flex items-center gap-2">
+            <img src={Logo} alt="" className="w-10" />
+            <h1 className="text-lg font-bold tracking-wide"> Opero </h1>
+          </div>
         </Link>
 
         {/* Desktop Menu */}
