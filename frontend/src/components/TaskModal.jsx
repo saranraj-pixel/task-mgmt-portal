@@ -1,8 +1,9 @@
 import { useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { createTask, updateTask } from "../services/taskService";
 import { toast } from "react-toastify";
 import { logError } from "../../utils/logger";
+import CustomDatePicker from "../components/CustomDatePicker";
 
 const TaskModal = ({ isOpen, onClose, task, onSave }) => {
   const isEdit = !!task;
@@ -11,6 +12,7 @@ const TaskModal = ({ isOpen, onClose, task, onSave }) => {
     register,
     handleSubmit,
     reset,
+    control,
     formState: { errors },
   } = useForm();
 
@@ -121,16 +123,35 @@ const TaskModal = ({ isOpen, onClose, task, onSave }) => {
           {/* DEADLINE */}
           <div>
             <label className="block font-medium text-sm mb-1">Deadline</label>
-            <input
-              type="date"
-              {...register("deadline", {
+
+            <Controller
+              name="deadline"
+              control={control}
+              rules={{
                 required: "Deadline required",
-                validate: (value) =>
-                  new Date(value) > new Date() ||
-                  "Deadline must be future date",
-              })}
-              className="w-full border cursor-pointer outline-none rounded-lg px-3 py-2"
+                validate: (value) => {
+                  if (!value) return true;
+
+                  const [y, m, d] = value.split("-");
+                  const selected = new Date(y, m - 1, d);
+
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0);
+
+                  return selected > today || "Deadline must be future date";
+                },
+              }}
+              render={({ field }) => (
+                <CustomDatePicker
+                  value={field.value}
+                  onChange={field.onChange}
+                  placeholder="Select deadline"
+                  className="w-full"
+                  minDate={new Date()} // prevents past selection
+                />
+              )}
             />
+
             {errors.deadline && (
               <p className="text-red-500 text-sm">{errors.deadline.message}</p>
             )}

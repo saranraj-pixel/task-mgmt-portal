@@ -6,6 +6,7 @@ import TaskModal from "../components/TaskModal";
 import ConfirmDialog from "../components/ConfirmDialog";
 import { toast } from "react-toastify";
 import { logError } from "../../utils/logger";
+import CustomDatePicker from "../components/CustomDatePicker";
 
 const Tasks = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -240,22 +241,16 @@ const Tasks = () => {
               <option value="done">Done</option>
             </select>
 
-            <input
-              type="date"
+            <CustomDatePicker
               value={deadlineFrom}
-              onChange={(e) =>
-                updateParams({ deadlineFrom: e.target.value, page: 1 })
-              }
-              className="border cursor-pointer rounded-lg px-3 py-2 w-full sm:w-auto"
+              onChange={(val) => updateParams({ deadlineFrom: val, page: 1 })}
+              placeholder="From date"
             />
 
-            <input
-              type="date"
+            <CustomDatePicker
               value={deadlineTo}
-              onChange={(e) =>
-                updateParams({ deadlineTo: e.target.value, page: 1 })
-              }
-              className="border cursor-pointer rounded-lg px-3 py-2 w-full sm:w-auto"
+              onChange={(val) => updateParams({ deadlineTo: val, page: 1 })}
+              placeholder="To date"
             />
 
             <button
