@@ -73,7 +73,7 @@ const TaskModal = ({ isOpen, onClose, task, onSave }) => {
             <label className="block font-medium text-sm mb-1">Title</label>
             <input
               {...register("title", { required: "Title is required" })}
-              className="w-full border outline-none rounded-lg px-3 py-2"
+              className="w-full border focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-lg px-3 py-2"
             />
             {errors.title && (
               <p className="text-red-500 text-sm">{errors.title.message}</p>
@@ -88,7 +88,7 @@ const TaskModal = ({ isOpen, onClose, task, onSave }) => {
             <textarea
               {...register("description")}
               rows="3"
-              className="w-full border outline-none rounded-lg px-3 py-2"
+              className="w-full border focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-lg px-3 py-2"
             />
           </div>
 
@@ -97,7 +97,7 @@ const TaskModal = ({ isOpen, onClose, task, onSave }) => {
             <label className="block font-medium text-sm mb-1">Priority</label>
             <select
               {...register("priority")}
-              className="w-full border cursor-pointer outline-none rounded-lg px-3 py-2"
+              className="w-full border focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer outline-none rounded-lg px-3 py-2"
             >
               <option value="low">Low</option>
               <option value="medium">Medium</option>
@@ -111,7 +111,7 @@ const TaskModal = ({ isOpen, onClose, task, onSave }) => {
               <label className="block font-medium text-sm mb-1">Status</label>
               <select
                 {...register("status")}
-                className="w-full border cursor-pointer outline-none rounded-lg px-3 py-2"
+                className="w-full border focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer outline-none rounded-lg px-3 py-2"
               >
                 <option value="todo">Todo</option>
                 <option value="in-progress">In Progress</option>
