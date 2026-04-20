@@ -7,9 +7,9 @@ const ProtectedRoute = ({ children }) => {
 
   if (loading) {
     return (
-      <p>
+      <div>
         <Loader />
-      </p>
+      </div>
     );
   }
 

@@ -7,9 +7,9 @@ const PublicRoute = ({ children }) => {
 
   if (loading)
     return (
-      <p>
+      <div>
         <Loader />
-      </p>
+      </div>
     );
 
   // if user already logged in redirect to dashboard
