@@ -39,7 +39,8 @@ const CustomDatePicker = ({
       placeholderText={placeholder}
       minDate={minDate}
       maxDate={maxDate}
-      className={`border outline-none cursor-pointer rounded-lg px-3 py-2 w-full sm:w-auto ${className}`}
+      className={`border outline-none cursor-pointer rounded-lg px-3 py-2 w-full h-full bg-transparent ${className}`}
+      wrapperClassName="w-full"
     />
   );
 };

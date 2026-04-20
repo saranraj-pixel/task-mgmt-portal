@@ -17,6 +17,7 @@ const Tasks = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [initialLoading, setInitialLoading] = useState(true);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState(null);
@@ -71,8 +72,6 @@ const Tasks = () => {
   // Fetch tasks
   const fetchTasks = useCallback(async () => {
     try {
-      setLoading(true);
-
       const data = await getTasks({
         page,
         limit: 10,
@@ -97,6 +96,7 @@ const Tasks = () => {
       });
     } finally {
       setLoading(false);
+      setInitialLoading(false);
     }
   }, [page, search, priority, status, deadlineFrom, deadlineTo]);
 
@@ -181,7 +181,7 @@ const Tasks = () => {
       {/* HEADER */}
 
       <div className="flex flex-col [@media(min-width:350px)]:flex-row [@media(min-width:350px)]:justify-between [@media(min-width:350px)]:items-center gap-4 mb-6">
-        {loading ? (
+        {initialLoading ? (
           <>
             <Skeleton className="h-8 w-40" />
             <Skeleton className="h-10 w-full [@media(min-width:350px)]:w-32" />
@@ -207,15 +207,15 @@ const Tasks = () => {
       {/* FILTER BAR */}
 
       <div className="bg-white border border-gray-400 rounded-xl p-4 mb-6 shadow-sm">
-        {loading ? (
+        {initialLoading ? (
           <div className="flex flex-col lg:flex-row lg:items-center gap-4">
             <Skeleton className="h-10 w-full lg:flex-1" />
-            <div className="grid grid-cols-2 md:flex md:justify-end gap-3 w-full lg:w-auto">
-              <Skeleton className="h-10 w-full sm:w-24" />
-              <Skeleton className="h-10 w-full sm:w-24" />
-              <Skeleton className="h-10 w-full sm:w-32" />
-              <Skeleton className="h-10 w-full sm:w-32" />
-              <Skeleton className="h-10 w-16 hidden md:block" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:flex lg:items-center gap-3 w-full lg:w-auto">
+              <Skeleton className="h-10 w-full lg:w-32" />
+              <Skeleton className="h-10 w-full lg:w-32" />
+              <Skeleton className="h-10 w-full lg:w-40" />
+              <Skeleton className="h-10 w-full lg:w-40" />
+              <Skeleton className="h-10 w-20 sm:col-span-2 md:col-span-4 lg:col-auto lg:ml-2 mx-auto lg:mx-0" />
             </div>
           </div>
         ) : (
@@ -238,13 +238,13 @@ const Tasks = () => {
 
             {/* FILTERS */}
 
-            <div className="grid grid-cols-2 md:flex md:justify-end gap-3 w-full lg:w-auto">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:flex lg:items-center gap-3 w-full lg:w-auto">
               <select
                 value={priority}
                 onChange={(e) =>
                   updateParams({ priority: e.target.value, page: 1 })
                 }
-                className="border cursor-pointer rounded-lg px-3 py-2 w-full sm:w-auto"
+                className="border cursor-pointer rounded-lg px-3 py-2 w-full lg:w-32 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">Priority</option>
                 <option value="low">Low</option>
@@ -257,7 +257,7 @@ const Tasks = () => {
                 onChange={(e) =>
                   updateParams({ status: e.target.value, page: 1 })
                 }
-                className="border cursor-pointer rounded-lg px-3 py-2 w-full sm:w-auto"
+                className="border cursor-pointer rounded-lg px-3 py-2 w-full lg:w-32 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">Status</option>
                 <option value="todo">Todo</option>
@@ -265,21 +265,25 @@ const Tasks = () => {
                 <option value="done">Done</option>
               </select>
 
-              <CustomDatePicker
-                value={deadlineFrom}
-                onChange={(val) => updateParams({ deadlineFrom: val, page: 1 })}
-                placeholder="From date"
-              />
+              <div className="w-full lg:w-40">
+                <CustomDatePicker
+                  value={deadlineFrom}
+                  onChange={(val) => updateParams({ deadlineFrom: val, page: 1 })}
+                  placeholder="From date"
+                />
+              </div>
 
-              <CustomDatePicker
-                value={deadlineTo}
-                onChange={(val) => updateParams({ deadlineTo: val, page: 1 })}
-                placeholder="To date"
-              />
+              <div className="w-full lg:w-40">
+                <CustomDatePicker
+                  value={deadlineTo}
+                  onChange={(val) => updateParams({ deadlineTo: val, page: 1 })}
+                  placeholder="To date"
+                />
+              </div>
 
               <button
                 onClick={clearFilters}
-                className="col-span-2 md:col-auto md:mr-auto text-base text-red-600 hover:underline cursor-pointer text-right md:text-left"
+                className="sm:col-span-2 md:col-span-4 lg:col-auto text-base text-red-600 hover:text-red-700 font-medium hover:underline cursor-pointer text-center lg:text-left lg:ml-2"
               >
                 Clear
               </button>
