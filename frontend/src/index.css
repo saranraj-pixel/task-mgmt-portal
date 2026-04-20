@@ -1,1 +1,36 @@
 @import "tailwindcss";
+
+/* Remove focus outlines from chart segments and containers */
+svg:focus,
+path:focus,
+rect:focus,
+path,
+rect,
+.recharts-wrapper,
+.recharts-surface {
+  outline: none !important;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.recharts-active-dot,
+.recharts-rectangle:focus,
+.recharts-sector:focus,
+.recharts-sector,
+.recharts-rectangle {
+  outline: none !important;
+  stroke: none !important;
+  stroke-width: 0 !important;
+}
+
+
+.recharts-tooltip-cursor {
+  display: none !important;
+}
+
+.recharts-wrapper *:focus,
+.recharts-wrapper *:active,
+.recharts-wrapper *:hover {
+  outline: none !important;
+  box-shadow: none !important;
+  stroke-width: 0 !important;
+}
