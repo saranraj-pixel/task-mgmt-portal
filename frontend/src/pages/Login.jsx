@@ -7,8 +7,8 @@ import { useAuth } from "../context/AuthContext";
 
 import AuthLayout from "../layouts/AuthLayout";
 import FormInput from "../components/FormInput";
-import Spinner from "../components/Spinner";
 import { toast } from "react-toastify";
+import Loader from "../components/Loader";
 
 function Login() {
   const navigate = useNavigate();
@@ -77,7 +77,7 @@ function Login() {
           disabled={loading}
           className="w-full flex justify-center items-center cursor-pointer gap-2 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition disabled:opacity-60 disabled:cursor-not-allowed"
         >
-          {loading && <Spinner />}
+          {loading && <Loader />}
           {loading ? "Logging in..." : "Login"}
         </button>
       </form>
