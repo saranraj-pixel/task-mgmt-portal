@@ -76,7 +76,9 @@ const TaskModal = ({ isOpen, onClose, task, onSave }) => {
               className="w-full border focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-lg px-3 py-2"
             />
             {errors.title && (
-              <p className="text-red-500 text-sm">{errors.title.message}</p>
+              <p className="text-red-500 text-sm mt-1">
+                {errors.title.message}
+              </p>
             )}
           </div>
 
@@ -85,11 +87,30 @@ const TaskModal = ({ isOpen, onClose, task, onSave }) => {
             <label className="block font-medium text-sm mb-1">
               Description
             </label>
+
             <textarea
-              {...register("description")}
+              {...register("description", {
+                required: "Description is required",
+                minLength: {
+                  value: 10,
+                  message: "Description must be at least 10 characters",
+                },
+                maxLength: {
+                  value: 200,
+                  message: "Description cannot exceed 200 characters",
+                },
+                validate: (value) =>
+                  value.trim().length > 0 || "Description cannot be empty",
+              })}
               rows="3"
               className="w-full border focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-lg px-3 py-2"
             />
+
+            {errors.description && (
+              <p className="text-red-500 text-sm">
+                {errors.description.message}
+              </p>
+            )}
           </div>
 
           {/* PRIORITY */}
@@ -153,7 +174,9 @@ const TaskModal = ({ isOpen, onClose, task, onSave }) => {
             />
 
             {errors.deadline && (
-              <p className="text-red-500 text-sm">{errors.deadline.message}</p>
+              <p className="text-red-500 text-sm mt-1">
+                {errors.deadline.message}
+              </p>
             )}
           </div>
 

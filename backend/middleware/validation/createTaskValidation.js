@@ -4,9 +4,11 @@ exports.createTaskValidation = [
   body("title").notEmpty().withMessage("Title is required"),
 
   body("description")
-    .optional()
     .notEmpty()
-    .withMessage("Description is required"),
+    .withMessage("Description is required")
+    .isLength({ min: 10, max: 200 })
+    .withMessage("Description must be between 10 and 200 characters")
+    .trim(),
 
   body("priority")
     .isIn(["low", "medium", "high"])
