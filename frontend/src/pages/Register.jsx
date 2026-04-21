@@ -6,7 +6,7 @@ import { useState } from "react";
 import AuthLayout from "../layouts/AuthLayout";
 import FormInput from "../components/FormInput";
 import { toast } from "react-toastify";
-import Loader from "../components/Loader";
+import Spinner from "../components/Spinner";
 
 function Register() {
   const navigate = useNavigate();
@@ -116,7 +116,7 @@ function Register() {
           disabled={loading}
           className="w-full flex justify-center items-center cursor-pointer gap-2 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition disabled:opacity-60 disabled:cursor-not-allowed"
         >
-          {loading && <Loader />}
+          {loading && <Spinner />}
           {loading ? "Creating..." : "Create Account"}
         </button>
       </form>
