@@ -1,506 +1,153 @@
-# Task Management Portal Setup Guide
+# Task Management Portal 🚀
 
-Build a full-stack **Task Management Portal** where users can register/login, create and manage tasks with priorities and deadlines, and view a dashboard with analytics. This project demonstrates backend API design, authentication, and task management features.
+Task Management Portal is a sophisticated full-stack application designed to streamline task organization and productivity. It provides a premium user experience with drag-and-drop functionality, real-time statistics, and a responsive design that works seamlessly across all devices.
 
----
+## 🛠 Tech Stack
 
-# 🚀 Tech Stack / Packages Used
+### Frontend
+- **Framework:** React 19 (Vite)
+- **Styling:** Tailwind CSS
+- **State Management & Routing:** React Router DOM
+- **Data Fetching:** Axios
+- **Form Handling:** React Hook Form
+- **Icons & UI:** React Icons, React Toastify
+- **Charts:** Recharts
+- **Drag & Drop:** @dnd-kit
+- **Utilities:** Date-fns, React Helmet Async
+- **Monitoring:** Sentry
 
-### Core Dependencies
+### Backend
+- **Runtime:** Node.js
+- **Framework:** Express.js
+- **Database:** MongoDB (Mongoose ODM)
+- **Authentication:** JWT (JSON Web Tokens), BcryptJS
+- **Validation:** Express-Validator
+- **Logging:** Winston
+- **Security:** CORS, Dotenv
 
-* **express** → Web framework for building APIs
-* **mongoose** → MongoDB object modeling
-* **dotenv** → Load environment variables from `.env`
-* **cors** → Enable cross-origin requests
-* **bcryptjs** → Hash passwords securely
-* **jsonwebtoken** → Authentication using JWT
+## ✨ Features
 
----
+- **Secure Authentication:** Robust sign-up and login system with JWT-based sessions.
+- **User Profiles:** Manage personal information and update security settings.
+- **Task Management:** Full CRUD operations for tasks with priority and status tracking.
+- **Drag & Drop Organization:** Intuitive interface for rearranging tasks using dnd-kit.
+- **Advanced Filtering:** Powerful search and filter capabilities by status, priority, and date ranges.
+- **Dynamic Dashboard:** Visual representation of task distributions and completion statistics.
+- **Responsive UI:** Modern, clean, and mobile-friendly design built with Tailwind CSS.
+- **Reliability:** Built-in error handling, logging, and error tracking via Sentry.
 
-# 📥 Clone The Repository
+## 📋 Prerequisites
 
+- **Node.js:** v18.x or higher
+- **npm:** v9.x or higher
+- **MongoDB:** v6.x+ (Local instance or MongoDB Atlas)
+
+## 🚀 Setup & Installation
+
+### 1. Backend Setup
 ```bash
-git clone https://github.com/your-username/your-repo-name.git
-cd your-repo-name
-```
-
----
-
-# 📥 Installation
-
-```bash
+git clone <repository-url>
+cd backend
 npm install
 ```
-
----
-
-# ⚙️ Environment Variables
-
-Create a `.env` file in the root directory and add the following:
-
+Create a `.env` file in the `backend` directory and add the following:
 ```env
-PORT=YOUR_PORT
-MONGO_URI=YOUR_MONGODB_CONNECTION_URL
-JWT_SECRET=YOUR_JWT_SECRET
+PORT=6000
+MONGO_URI=your_mongodb_connection_string
+JWT_SECRET=your_jwt_secret_key
 JWT_EXPIRES_IN=YOUR_TOKEN_EXPIRATION
+CLIENT_URL=http://localhost:5173
+PRODUCTION_CLIENT_URL=https://your-production-app.com
 ```
-
----
-
-# 🔑 Environment Variables Explained
-
-### PORT
-
-The port where your server will run.
-
-Example:
-
-```
-PORT=5000
-```
-
----
-
-### MONGO_URI
-
-Your MongoDB connection string.
-
-Example:
-
-```
-MONGO_URI=mongodb+srv://username:password@cluster.mongodb.net/dbname
-```
-
----
-
-### JWT_SECRET
-
-Secret key used to sign JWT tokens.
-
-Example:
-
-```
-JWT_SECRET=your_super_secure_random_string
-```
-
-
----
-
-### JWT_EXPIRES_IN
-
-
-Token expiration time.
-
-
-Examples:
-
-```
-JWT_EXPIRES_IN=7d
-JWT_EXPIRES_IN=1h
-JWT_EXPIRES_IN=30m
-```
-
----
-
-# ▶️ Run the Server
-
+Run the backend:
 ```bash
-npm start
+npm run dev
 ```
 
-or
-
+### 2. Frontend Setup
 ```bash
-node server.js
+cd ../frontend
+npm install
+```
+Create a `.env` file in the `frontend` directory and add the following:
+```env
+VITE_API_URL=http://localhost:5000
+VITE_SENTRY_DSN_KEY=https://sentry_dsn_key_url
+DEV_PRODUCTION_URL=https://your-production-app.com
+```
+Run the frontend:
+```bash
+npm run dev
 ```
 
----
-
-# 🛡️ Security Notes
-
-* Never commit `.env` file to GitHub
-* Add `.env` to `.gitignore`
-* Keep `JWT_SECRET` private
-* Use different environment variables for development and production
+## 🔐 Environment Variables
 
----
+### Backend (`/backend/.env`)
+| Variable | Description | Example |
+| --- | --- | --- |
+| `PORT` | The port the server runs on | `6000` |
+| `MONGO_URI` | MongoDB connection string | `mongodb://localhost:27017/taskmgmt` |
+| `JWT_SECRET` | Secret key for JWT encryption | `supersecretkey` |
+| `JWT_EXPIRES_IN` | JWT token expiry time out | `1d` |
+| `CLIENT_URL` | Frontend URL for CORS (Dev) | `http://localhost:5173` |
+| `PRODUCTION_CLIENT_URL` | Frontend URL for CORS (Prod) | `https://tasks.myapp.com` |
 
-# 📁 Recommended Project Structure
+### Frontend (`/frontend/.env`)
+| Variable | Description | Example |
+| --- | --- | --- |
+| `VITE_API_URL` | Base URL for backend API calls | `http://localhost:5000` |
+| `VITE_SENTRY_DSN_KEY` | Sentry error monitoring url | `https://sentry_dsn_key_url` |
+| `DEV_PRODUCTION_URL` | Base URL for backend API calls | `http://hosted_url.com` |
 
-```
-/controllers
-/models
-/routes
-/middleware
-/config
-/utils
-server.js
-```
+## 📡 API Reference
 
----
+### Auth Endpoints
+| Method | Route | Auth | Description |
+| --- | --- | --- | --- |
+| `POST` | `/api/auth/register` | No | Create a new account |
+| `POST` | `/api/auth/login` | No | Authenticate user and return token |
+| `POST` | `/api/auth/logout` | Yes | Invalidate session |
+| `GET` | `/api/auth/me` | Yes | Get current user details |
+| `PUT` | `/api/auth/profile` | Yes | Update user profile |
+| `PUT` | `/api/auth/change-password` | Yes | Change account password |
 
-# 🔐 Auth API Endpoints
+### Task Endpoints
+| Method | Route | Auth | Description |
+| --- | --- | --- | --- |
+| `GET` | `/api/tasks/` | Yes | Retrieve all tasks for user |
+| `POST` | `/api/tasks/` | Yes | Create a new task |
+| `GET` | `/api/tasks/stats` | Yes | Get task analytical data |
+| `GET` | `/api/tasks/:id` | Yes | Get a single task by ID |
+| `PUT` | `/api/tasks/:id` | Yes | Update task details |
+| `DELETE` | `/api/tasks/:id` | Yes | Remove a task |
 
-## Base Route
+## 📸 Screenshots
 
-```
-/api/auth
-```
+### 🖥️ Dashboard
+<img width="100%" height="784" alt="Dashboard" src="https://github.com/user-attachments/assets/21c3593b-bda0-4f6b-94e7-2bf01393f300" />
 
----
 
-## 1. Login
+### 📋 Task List
+<img width="100%" height="1098" alt="Task List" src="https://github.com/user-attachments/assets/3cf54b4e-9680-4794-af62-2cfb155fb909" />
 
-### Endpoint
 
-```
-POST /api/auth/login
-```
+### 🗂️ Task Board
+<img width="100%" height="1029" alt="Task Board" src="https://github.com/user-attachments/assets/68efe261-4f16-4faf-89fb-2a44c7ab7890" />
 
-### Request Body
 
-```json
-{
-  "email": "johndoe@gmail.com",
-  "password": "hksnEU38N8#(#2KE1234*$"
-}
-```
+### 👤 Profile Page
+<img width="100%" height="649" alt="Profile" src="https://github.com/user-attachments/assets/bd7c13dc-b584-48aa-ad23-609306b4c9e5" />
 
-### Success Response
 
-```json
-{
-  "success": true,
-  "message": "Login successful",
-  "token": "YOUR_JWT_TOKEN",
-  "data": {
-    "_id": "69c9300111c93955f92744a7",
-    "name": "John Doe",
-    "email": "johndoe@gmail.com",
-    "role": "admin",
-    "createdAt": "2026-03-29T13:58:25.942Z"
-  }
-}
-```
 
----
+## 🔮 Future Enhancements
 
-## 2. Register
+- **Real-time Updates:** WebSocket integration for instant task updates.
+- **Collaborative Workspaces:** Share task lists and boards with team members.
+- **Push Notifications:** Reminders for upcoming task deadlines.
+- **Theme Support:** Native Dark/Light mode customization.
+- **Exporting:** Download task reports in PDF/Excel formats.
 
-### Endpoint
+## 👤 Author
 
-```
-POST /api/auth/register
-```
-
-### Request Body
-
-```json
-{
-  "name": "John Doe",
-  "email": "johndoe@gmail.com",
-  "password": "hksnEU38N8#(#2KE1234*$",
-  "role": "admin"
-}
-```
-
-### Success Response
-
-```json
-{
-  "success": true,
-  "message": "User registered successfully",
-  "data": {
-    "id": "69c9345b11c93955f92744b3",
-    "name": "John Doe",
-    "email": "johndoe@gmail.com",
-    "role": "admin"
-  }
-}
-```
-
----
-
-## 3. Logout
-
-### Endpoint
-
-```
-POST /api/auth/logout
-```
-
-### Headers
-
-```
-Authorization: Bearer <token>
-```
-
-### Success Response
-
-```json
-{
-  "success": true,
-  "message": "Logged out successfully",
-  "note": "Client should remove the token (JWT is stateless)"
-}
-```
-
----
-
-# 📋 Task API Endpoints
-
-## Base Route
-
-```
-/api/tasks
-```
-
-All task APIs require authentication.
-
-```
-Authorization: Bearer <token>
-```
-
----
-
-# 📥 Get All Tasks
-
-### Endpoint
-
-```
-GET /api/tasks
-```
-
-### Description
-
-Fetch all tasks created by the logged-in user with **pagination support**.
-
-### Success Response
-
-```json
-{
-  "success": true,
-  "tasks": [
-    {
-      "_id": "69cb6d5f4001c5ce41173aca",
-      "title": "Database Storing Issue",
-      "description": "database storing issue",
-      "priority": "medium",
-      "status": "in-progress",
-      "deadline": "2026-04-23T00:00:00.000Z",
-      "createdBy": "69ca5bed91111142085c0bc3",
-      "createdAt": "2026-03-31T06:44:47.797Z",
-      "updatedAt": "2026-03-31T06:44:47.797Z",
-      "isOverdue": false
-    }
-  ],
-  "totalCount": 26,
-  "currentPage": 1,
-  "totalPages": 3
-}
-```
-
----
-
-# ➕ Create Task
-
-### Endpoint
-
-```
-POST /api/tasks
-```
-
-### Request Body
-
-```json
-{
-  "title": "Database API Connection Issue URI",
-  "description": "database api connection issue uri environments",
-  "priority": "medium",
-  "status": "todo",
-  "deadline": "2026-04-26"
-}
-```
-
-### Success Response
-
-```json
-{
-  "success": true,
-  "message": "Task created successfully",
-  "task": {
-    "title": "Database API Connection Issue URI",
-    "description": "database api connection issue uri environments",
-    "priority": "medium",
-    "status": "todo",
-    "deadline": "2026-04-26T00:00:00.000Z",
-    "createdBy": "69ca71a144b1951011cc3289",
-    "createdAt": "2026-03-31T06:54:28.806Z",
-    "updatedAt": "2026-03-31T06:54:28.806Z",
-    "isOverdue": false
-  }
-}
-```
-
----
-
-# 📊 Get Task Statistics
-
-### Endpoint
-
-```
-GET /api/tasks/stats
-```
-
-### Headers
-
-```
-Authorization: Bearer <token>
-```
-
-### Success Response
-
-```json
-{
-  "success": true,
-  "stats": {
-    "totalTasks": 15,
-    "completedTasks": 6,
-    "inProgressTasks": 4,
-    "todoTasks": 5,
-    "overdueTasks": 0,
-    "completionPercentage": 40,
-    "tasksByPriority": {
-      "low": 3,
-      "medium": 7,
-      "high": 5
-    }
-  }
-}
-```
-
----
-
-# 🔎 Get Task By ID
-
-### Endpoint
-
-```
-GET /api/tasks/:id
-```
-
-Example
-
-```
-GET /api/tasks/69d899272266d05ccc94f358
-```
-
-### Success Response
-
-```json
-{
-  "success": true,
-  "task": {
-    "_id": "69d899272266d05ccc94f358",
-    "title": "Web Design",
-    "description": "web design improving",
-    "priority": "medium",
-    "status": "todo",
-    "deadline": "2026-04-11T00:00:00.000Z",
-    "createdBy": {
-      "_id": "69d5e2cb5484e7a38b76ae5a",
-      "name": "John Doe",
-      "email": "johndoe@gmail.com"
-    },
-    "createdAt": "2026-04-10T06:31:03.982Z",
-    "updatedAt": "2026-04-10T06:35:31.492Z",
-    "isOverdue": false,
-    "id": "69d899272266d05ccc94f358"
-  }
-}
-```
-
----
-
-# ✏️ Update Task
-
-### Endpoint
-
-```
-PUT /api/tasks/:id
-```
-
-Example
-
-```
-PUT /api/tasks/69d899272266d05ccc94f358
-```
-
-### Request Body
-
-```json
-{
-  "title": "Web Design",
-  "description": "web design improving",
-  "priority": "medium",
-  "status": "todo",
-  "deadline": "2026-04-11T00:00:00.000Z"
-}
-```
-
-### Success Response
-
-```json
-{
-  "success": true,
-  "message": "Task updated successfully",
-  "task": {
-    "_id": "69d899272266d05ccc94f358",
-    "title": "Web Design",
-    "description": "web design improving",
-    "priority": "medium",
-    "status": "todo",
-    "deadline": "2026-04-11T00:00:00.000Z"
-  }
-}
-```
-
----
-
-# ❌ Delete Task
-
-### Endpoint
-
-```
-DELETE /api/tasks/:id
-```
-
-Example
-
-```
-DELETE /api/tasks/69d38b0adf9df9dc8e20fb39
-```
-
-### Success Response
-
-```json
-{
-  "success": true,
-  "message": "Task deleted successfully"
-}
-```
-
----
-
-# 💡 Notes
-
-* All APIs include **validation and proper error handling**
-* JWT authentication is required for all task routes
-* Use **Postman or Thunder Client** to test APIs
-* MongoDB Atlas recommended for production
-
----
-
-# 🧑‍💻 Author
-
-Saran Raj.R
+  Saran Raj.R
