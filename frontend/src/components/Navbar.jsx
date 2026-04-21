@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, NavLink } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useState } from "react";
 import { FiMenu, FiX } from "react-icons/fi";
@@ -21,21 +21,49 @@ const Navbar = () => {
 
         {/* Desktop Menu */}
         <div className="hidden md:flex gap-8 font-bold">
-          <Link to="/dashboard" className="hover:text-indigo-200 transition">
+          <NavLink
+            to="/dashboard"
+            className={({ isActive }) =>
+              isActive
+                ? "text-blue-300 border-blue-300 pb-1"
+                : "hover:text-indigo-200 transition"
+            }
+          >
             Dashboard
-          </Link>
+          </NavLink>
 
-          <Link to="/tasks" className="hover:text-indigo-200 transition">
+          <NavLink
+            to="/tasks"
+            className={({ isActive }) =>
+              isActive
+                ? "text-blue-300 border-blue-300 pb-1"
+                : "hover:text-indigo-200 transition"
+            }
+          >
             Tasks
-          </Link>
+          </NavLink>
 
-          <Link to="/board" className="hover:text-indigo-200 transition">
+          <NavLink
+            to="/board"
+            className={({ isActive }) =>
+              isActive
+                ? "text-blue-300 border-blue-300 pb-1"
+                : "hover:text-indigo-200 transition"
+            }
+          >
             Board
-          </Link>
+          </NavLink>
 
-          <Link to="/profile" className="hover:text-indigo-200 transition">
+          <NavLink
+            to="/profile"
+            className={({ isActive }) =>
+              isActive
+                ? "text-blue-300 border-blue-300 pb-1"
+                : "hover:text-indigo-200 transition"
+            }
+          >
             Profile
-          </Link>
+          </NavLink>
         </div>
 
         {/* User Section */}
@@ -88,37 +116,45 @@ const Navbar = () => {
 
         {/* Menu Links */}
         <div className="flex flex-col gap-6 p-6 font-medium border-b border-gray-400">
-          <Link
+          <NavLink
             to="/dashboard"
             onClick={() => setMenuOpen(false)}
-            className="hover:text-indigo-600"
+            className={({ isActive }) =>
+              isActive ? "text-indigo-600 font-bold" : "hover:text-indigo-600"
+            }
           >
             Dashboard
-          </Link>
+          </NavLink>
 
-          <Link
+          <NavLink
             to="/tasks"
             onClick={() => setMenuOpen(false)}
-            className="hover:text-indigo-600"
+            className={({ isActive }) =>
+              isActive ? "text-indigo-600 font-bold" : "hover:text-indigo-600"
+            }
           >
             Tasks
-          </Link>
+          </NavLink>
 
-          <Link
+          <NavLink
             to="/board"
             onClick={() => setMenuOpen(false)}
-            className="hover:text-indigo-600"
+            className={({ isActive }) =>
+              isActive ? "text-indigo-600 font-bold" : "hover:text-indigo-600"
+            }
           >
             Board
-          </Link>
+          </NavLink>
 
-          <Link
+          <NavLink
             to="/profile"
             onClick={() => setMenuOpen(false)}
-            className="hover:text-indigo-600"
+            className={({ isActive }) =>
+              isActive ? "text-indigo-600 font-bold" : "hover:text-indigo-600"
+            }
           >
             Profile
-          </Link>
+          </NavLink>
         </div>
 
         {/* User Section */}
