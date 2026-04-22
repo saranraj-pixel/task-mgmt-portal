@@ -4,8 +4,10 @@ const cors = require("cors");
 const connectDB = require("./config/db");
 const authRoutes = require("./routes/authRoutes");
 const taskRoutes = require("./routes/taskRoute");
+const adminRoutes = require("./routes/adminRoute");
 const errorHandler = require("./middleware/errorHandler");
 const logger = require("./utils/logger");
+const seedAdmin = require("./seeder/admin");
 
 const PORT = process.env.PORT || 6000;
 
@@ -44,6 +46,7 @@ app.get("/", (req, res) => {
 
 app.use("/api/auth", authRoutes);
 app.use("/api/tasks", taskRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Global error handler
 app.use(errorHandler);
@@ -51,6 +54,7 @@ app.use(errorHandler);
 const serverUp = async () => {
   try {
     await connectDB();
+    await seedAdmin();
     app.listen(PORT, () => {
       logger.info(`Server running port on ${PORT}`);
     });

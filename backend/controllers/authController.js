@@ -240,3 +240,60 @@ exports.changePassword = async (req, res) => {
     });
   }
 };
+
+// 🔐 Generate token
+const generateToken = (user) => {
+  return jwt.sign(
+    {
+      id: user._id,
+      role: user.role,
+    },
+    process.env.JWT_SECRET,
+    { expiresIn: "1d" }
+  );
+};
+
+// 🔑 Admin Login ONLY
+exports.adminLogin = async (req, res) => {
+  const { email, password } = req.body;
+
+  // 1. Find user
+  const user = await User.findOne({ email }).select("+password");
+
+  if (!user) {
+    return res.status(400).json({ message: "Invalid credentials" });
+  }
+
+  // 2. Check password
+  const isMatch = await user.comparePassword(password);
+
+  if (!isMatch) {
+    return res.status(400).json({ message: "Invalid credentials" });
+  }
+
+  // 3. Check role (🔥 IMPORTANT)
+  if (user.role !== "admin") {
+    return res.status(403).json({ message: "Not an admin" });
+  }
+
+  // 4. Generate token
+  const token = generateToken(user);
+
+  res.json({
+    message: "Admin login successful",
+    token,
+    user: user.getProfile(),
+  });
+};
+
+// @desc Get all users
+// @route GET /api/users
+// @access Private
+exports.getUsers = async (req, res) => {
+  const users = await User.find().select("_id name email");
+
+  res.json({
+    success: true,
+    users,
+  });
+};

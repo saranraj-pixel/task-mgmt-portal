@@ -1,66 +1,60 @@
 const mongoose = require("mongoose");
 const Task = require("../models/task");
+const User = require("../models/user");
 
 // @desc    Create Task
 // @route   POST /api/tasks
 // @access  Private
 exports.createTask = async (req, res) => {
   try {
-    const { title, description, priority, status, deadline } = req.body;
+    const { title, description, priority, status, deadline, assignedTo } = req.body;
 
-    // Validate input
-    if (!title) {
+    if (!title || !description || !priority || !status || !deadline) {
       return res.status(400).json({
         success: false,
-        message: "Title is required",
+        message: "All fields are required",
       });
     }
 
-    if (!description) {
-      return res.status(400).json({
+    // ✅ FIX: consistent user id handling
+    const creatorId = req.user.userId || req.user.id;
+
+    if (!creatorId) {
+      return res.status(401).json({
         success: false,
-        message: "Description is required",
+        message: "Unauthorized: missing user id",
       });
     }
 
-    if (!priority) {
-      return res.status(400).json({
-        success: false,
-        message: "Priority is required",
-      });
+    // validate assigned user
+    if (assignedTo) {
+      const userExists = await User.findById(assignedTo);
+      if (!userExists) {
+        return res.status(404).json({
+          success: false,
+          message: "Assigned user not found",
+        });
+      }
     }
 
-    if (!status) {
-      return res.status(400).json({
-        success: false,
-        message: "Status is required",
-      });
-    }
-
-    if (!deadline) {
-      return res.status(400).json({
-        success: false,
-        message: "Deadline is required",
-      });
-    }
-
-    // Create task
     const task = await Task.create({
       title,
       description,
       priority,
       status,
       deadline,
-      createdBy: req.user.userId, // from auth middleware
+      createdBy: creatorId, // 🔥 FIXED
+      assignedTo: assignedTo || null,
     });
 
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
       message: "Task created successfully",
       task,
     });
+
   } catch (error) {
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: "Server Error",
       error: error.message,
@@ -92,44 +86,57 @@ exports.getAllTasks = async (req, res) => {
       order = "desc",
     } = req.query;
 
-    // Dynamic Filter Object
+    const userId = req.user.userId;
+    const role = req.user.role; // 👈 IMPORTANT
 
-    const filter = {
-      createdBy: req.user.userId,
-    };
+    // ================= BASE FILTER =================
+    let filter = {};
 
-    // status filter
-
-    if (status) {
-      filter.status = status;
+    // ================= ROLE LOGIC =================
+    if (role === "admin") {
+      // ADMIN SEES EVERYTHING (for board management)
+      filter = {};
+    } else {
+      // USER SEES ONLY THEIR TASKS
+      filter = {
+        $or: [
+          { createdBy: userId },
+          { assignedTo: userId },
+        ],
+      };
     }
 
-    // priority filter
+    // ================= STATUS =================
+    if (status) filter.status = status;
 
-    if (priority) {
-      filter.priority = priority;
-    }
+    // ================= PRIORITY =================
+    if (priority) filter.priority = priority;
 
-    // Deadline Range Filter
+    // ================= DEADLINE =================
 
     if (deadlineFrom || deadlineTo) {
       filter.deadline = {};
-
-      if (deadlineFrom) {
-        filter.deadline.$gte = new Date(deadlineFrom);
-      }
-
-      if (deadlineTo) {
-        filter.deadline.$lte = new Date(deadlineTo);
-      }
+      if (deadlineFrom) filter.deadline.$gte = new Date(deadlineFrom);
+      if (deadlineTo) filter.deadline.$lte = new Date(deadlineTo);
     }
 
-    // Case-Insensitive Search
-
+    // ================= SEARCH =================
     if (search) {
-      filter.$or = [
-        { title: { $regex: search, $options: "i" } },
-        { description: { $regex: search, $options: "i" } },
+      filter.$and = [
+        role === "admin"
+          ? {}
+          : {
+              $or: [
+                { createdBy: userId },
+                { assignedTo: userId },
+              ],
+            },
+        {
+          $or: [
+            { title: { $regex: search, $options: "i" } },
+            { description: { $regex: search, $options: "i" } },
+          ],
+        },
       ];
     }
 
@@ -142,6 +149,8 @@ exports.getAllTasks = async (req, res) => {
     const totalCount = await Task.countDocuments(filter);
 
     const tasks = await Task.find(filter)
+      .populate("assignedTo", "name email") // who received task
+      .populate("createdBy", "name email") // who assigned task
       .sort({ [sortBy]: sortOrder })
       .skip(skip)
       .limit(limit);
@@ -300,7 +309,9 @@ exports.getTaskById = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const task = await Task.findById(id).populate("createdBy", "name email");
+    const task = await Task.findById(id)
+    .populate("createdBy", "name email")
+    .populate("assignedTo", "name email");
 
     // Task not found
     if (!task) {
@@ -310,13 +321,28 @@ exports.getTaskById = async (req, res) => {
       });
     }
 
-    // Ownership check
-    if (task.createdBy._id.toString() !== req.user.userId) {
+     const userId = req.user.userId;
+    const role = req.user.role;
+
+    // FIXED: admin bypass
+    if (
+      role !== "admin" &&
+      task.createdBy._id.toString() !== userId &&
+      task.assignedTo?._id?.toString() !== userId
+    ) {
       return res.status(403).json({
         success: false,
         message: "Not authorized to view this task",
       });
     }
+
+    // Ownership check
+    // if (task.createdBy._id.toString() !== req.user.userId) {
+    //   return res.status(403).json({
+    //     success: false,
+    //     message: "Not authorized to view this task",
+    //   });
+    // }
 
     res.status(200).json({
       success: true,
@@ -348,12 +374,35 @@ exports.updateTask = async (req, res) => {
       });
     }
 
-    // Ownership validation
-    if (task.createdBy.toString() !== req.user.userId) {
+     const userId = req.user.userId;
+    const role = req.user.role;
+
+    // ✅ FIXED: allow admin OR creator
+    if (role !== "admin" && task.createdBy.toString() !== userId) {
       return res.status(403).json({
         success: false,
         message: "Not authorized to update this task",
       });
+    }
+
+
+    // Ownership validation
+    // if (task.createdBy.toString() !== req.user.userId) {
+    //   return res.status(403).json({
+    //     success: false,
+    //     message: "Not authorized to update this task",
+    //   });
+    // }
+
+     // validate assignedTo if present
+    if (req.body.assignedTo) {
+      const userExists = await User.findById(req.body.assignedTo);
+      if (!userExists) {
+        return res.status(404).json({
+          success: false,
+          message: "Assigned user not found",
+        });
+      }
     }
 
     // Allowed fields
@@ -374,10 +423,9 @@ exports.updateTask = async (req, res) => {
 
     const updatedTask = await task.save();
 
-    const populatedTask = await Task.findById(updatedTask._id).populate(
-      "createdBy",
-      "name email",
-    );
+    const populatedTask = await Task.findById(updatedTask._id)
+    .populate("createdBy","name email",)
+    .populate("assignedTo", "name email");
 
     res.status(200).json({
       success: true,
@@ -410,13 +458,23 @@ exports.deleteTask = async (req, res) => {
       });
     }
 
-    // Ownership validation
-    if (task.createdBy.toString() !== req.user.userId) {
+     const userId = req.user.userId;
+    const role = req.user.role;
+
+    if (role !== "admin" && task.createdBy.toString() !== userId) {
       return res.status(403).json({
         success: false,
         message: "Not authorized to delete this task",
       });
     }
+
+    // Ownership validation
+    // if (task.createdBy.toString() !== req.user.userId) {
+    //   return res.status(403).json({
+    //     success: false,
+    //     message: "Not authorized to delete this task",
+    //   });
+    // }
 
     await task.deleteOne();
 
