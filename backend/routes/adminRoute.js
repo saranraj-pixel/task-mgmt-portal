@@ -16,7 +16,7 @@ const { protectRoute } = require("../middleware/authMiddleware");
 const { isAdmin } = require("../middleware/adminMiddleware");
 
 /* ---------------- ADMIN AUTH ---------------- */
-router.post("/login", adminLogin);
+router.post("/login",isAdmin, adminLogin);
 
 /* ---------------- DASHBOARD ---------------- */
 router.get("/dashboard", protectRoute, isAdmin, getAdminDashboard);
