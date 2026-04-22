@@ -67,88 +67,120 @@ const AdminTasks = () => {
       ? tasks
       : tasks.filter((t) => t.status === filter);
 
+    const formatStatus = (status) => {
+    if (status === "in-progress") return "In Progress";
+    return status.charAt(0).toUpperCase() + status.slice(1);
+  };
+
+  const getStatusStyle = (status) => {
+    switch (status) {
+      case "todo":
+        return "bg-gray-200 text-gray-700";
+      case "in-progress":
+        return "bg-amber-200 text-amber-700";
+      case "done":
+        return "bg-green-300 text-green-700";
+      default:
+        return "bg-gray-300 text-gray-700";
+    }
+  };
+
   return (
-    <div className="p-6 max-w-6xl mx-auto">
+    <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
 
-      {/* HEADER */}
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-800">
-            Admin Task Manager
-          </h1>
-          <p className="text-sm text-gray-500">
-            Create, assign and manage all tasks
-          </p>
-        </div>
+  {/* HEADER */}
+  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+    <div>
+      <h1 className="text-xl sm:text-2xl font-bold text-gray-800">
+        Admin Task Manager
+      </h1>
+      <p className="text-sm text-gray-500">
+        Create, assign and manage all tasks
+      </p>
+    </div>
 
-        <button
-          onClick={() => {
-            setSelectedTask(null);
-            setOpenModal(true);
-          }}
-          className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+    <button
+      onClick={() => {
+        setSelectedTask(null);
+        setOpenModal(true);
+      }}
+      className="flex cursor-pointer items-center justify-center gap-2 bg-blue-600 text-white px-4 py-2.5 rounded-lg hover:bg-blue-700 w-full sm:w-auto"
+    >
+      <FiPlus />
+      Create Task
+    </button>
+  </div>
+
+  {/* FILTERS */}
+  <div className="flex gap-2 overflow-x-auto pb-2 mb-5 scrollbar-hide">
+    {["all", "todo", "in-progress", "done"].map((f) => (
+      <button
+        key={f}
+        onClick={() => setFilter(f)}
+        className={`shrink-0 px-4 py-1.5 cursor-pointer rounded-full text-sm border transition ${
+          filter === f
+            ? "bg-blue-600 text-white border-blue-600"
+            : "bg-white text-gray-600 hover:bg-gray-200"
+        }`}
+      >
+            {f === "in-progress"
+              ? "In Progress"
+              : f.charAt(0).toUpperCase() + f.slice(1)}
+      </button>
+    ))}
+  </div>
+
+  {/* TASK LIST */}
+  <div className="space-y-4">
+    {loading ? (
+      [...Array(4)].map((_, i) => (
+        <Skeleton key={i} className="h-24 w-full rounded-xl" />
+      ))
+    ) : filteredTasks.length === 0 ? (
+      <p className="text-gray-500 text-center py-10">No tasks found</p>
+    ) : (
+      filteredTasks.map((task) => (
+        <div
+          key={task._id}
+          className="bg-white border rounded-xl p-4 shadow-sm hover:shadow-md transition"
         >
-          <FiPlus />
-          Create Task
-        </button>
-      </div>
+          {/* GRID LAYOUT */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
 
-      {/* FILTERS */}
-      <div className="flex gap-3 mb-5">
-        {["all", "todo", "in-progress", "done"].map((f) => (
-          <button
-            key={f}
-            onClick={() => setFilter(f)}
-            className={`px-3 py-1 rounded-full text-sm border ${
-              filter === f
-                ? "bg-blue-600 text-white"
-                : "bg-white text-gray-600"
-            }`}
-          >
-            {f}
-          </button>
-        ))}
-      </div>
+            {/* TITLE */}
+            <div className="md:col-span-2">
+              <h3 className="font-semibold text-gray-800 text-sm sm:text-base">
+                {task.title}
+              </h3>
+              <p className="text-xs text-gray-500">
+                Created by: {task.createdBy?.name || "Unknown"}
+              </p>
+            </div>
 
-      {/* TASK LIST */}
-      <div className="space-y-3">
-        {loading ? (
-          [...Array(4)].map((_, i) => (
-            <Skeleton key={i} className="h-20 w-full rounded-lg" />
-          ))
-        ) : filteredTasks.length === 0 ? (
-          <p className="text-gray-500">No tasks found</p>
-        ) : (
-          filteredTasks.map((task) => (
-            <div
-              key={task._id}
-              className="bg-white border rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm"
-            >
-              {/* LEFT */}
-              <div>
-                <h3 className="font-semibold text-gray-800">
-                  {task.title}
-                </h3>
-                <p className="text-xs text-gray-500">
-                  Created by: {task.createdBy?.name || "Unknown"}
-                </p>
-              </div>
-
-              {/* STATUS */}
-              <span className="text-sm px-3 py-1 rounded-full bg-gray-100 w-fit">
-                {task.status}
+            {/* STATUS */}
+            <div>
+              <span
+                    className={`inline-block text-xs sm:text-sm px-3 py-1 rounded-full font-medium ${getStatusStyle(
+                      task.status,
+                    )}`}
+                  >
+                    {formatStatus(task.status)}
               </span>
+            </div>
 
-              {/* ASSIGN USER */}
-              <div className="flex items-center gap-2">
-                <FiUser className="text-gray-400" />
+            {/* ACTIONS */}
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:justify-end">
+
+              {/* ASSIGN */}
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                <FiUser className="text-gray-400 shrink-0" />
 
                 <select
                   value={task.assignedTo?._id || ""}
                   onChange={(e) =>
                     handleAssign(task._id, e.target.value)
                   }
-                  className="border px-2 py-1 rounded-md text-sm"
+                  className="border px-2 py-1.5 rounded-md text-sm w-full sm:w-auto"
                 >
                   <option value="">Unassigned</option>
                   {users.map((u) => (
@@ -165,24 +197,26 @@ const AdminTasks = () => {
                   setSelectedTask(task);
                   setOpenModal(true);
                 }}
-                className="text-blue-600 text-sm hover:underline"
+                className="text-blue-600 text-sm hover:underline text-left sm:text-right"
               >
                 Edit
               </button>
             </div>
-          ))
-        )}
-      </div>
+          </div>
+        </div>
+      ))
+    )}
+  </div>
 
-      {/* MODAL */}
-      <TaskModal
-        isOpen={openModal}
-        onClose={() => setOpenModal(false)}
-        task={selectedTask}
-        users={users} 
-        onSave={() => window.location.reload()}
-      />
-    </div>
+  {/* MODAL */}
+  <TaskModal
+    isOpen={openModal}
+    onClose={() => setOpenModal(false)}
+    task={selectedTask}
+    users={users}
+    onSave={() => window.location.reload()}
+  />
+</div>
   );
 };
 
