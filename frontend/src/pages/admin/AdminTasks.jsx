@@ -108,6 +108,15 @@ const AdminTasks = () => {
     return statusMatch && priorityMatch;
   });
 
+  const totalTasks = tasks.length;
+const filteredCount = filteredTasks.length;
+
+const statusCounts = {
+  todo: tasks.filter((t) => t.status === "todo").length,
+  inProgress: tasks.filter((t) => t.status === "in-progress").length,
+  done: tasks.filter((t) => t.status === "done").length,
+};
+
   return (
     <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
 
@@ -117,9 +126,24 @@ const AdminTasks = () => {
       <h1 className="text-xl sm:text-2xl font-bold text-gray-800">
         Admin Task Manager
       </h1>
+
       <p className="text-sm text-gray-500">
-        Create, assign and manage all tasks
-      </p>
+      Total Tasks: <span className="font-semibold text-gray-700">{totalTasks}</span> | 
+      Showing: <span className="font-semibold text-blue-600">{filteredCount}</span>
+    </p>
+
+    {/* STATUS COUNTS */}
+    <div className="flex flex-wrap gap-3 mt-2 text-xs sm:text-sm">
+      <span className="px-3 py-1 rounded-full bg-gray-200 text-gray-700">
+        Todo: {statusCounts.todo}
+      </span>
+      <span className="px-3 py-1 rounded-full bg-amber-200 text-amber-700">
+        In Progress: {statusCounts.inProgress}
+      </span>
+      <span className="px-3 py-1 rounded-full bg-green-300 text-green-700">
+        Done: {statusCounts.done}
+      </span>
+    </div>
     </div>
 
     <button
