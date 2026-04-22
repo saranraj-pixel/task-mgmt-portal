@@ -16,10 +16,9 @@ const { loginValidation } = require("../middleware/validation/loginValidation");
 const { updateProfileValidation } = require("../middleware/validation/updateProfileValidation");
 const { changePasswordValidation } = require("../middleware/validation/changePasswordValidation");
 const { isAdmin } = require("../middleware/roleMiddleware");
-const { isUser } = require("../middleware/userMiddleware");
 const router = express.Router();
 
-router.post("/login",loginValidation, validate, isUser, loginUser);
+router.post("/login",loginValidation, validate, loginUser);
 router.post("/register", registerValidation, validate, registerUser);
 router.post("/logout",protectRoute, logoutUser);
 
