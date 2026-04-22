@@ -184,7 +184,10 @@ exports.getTaskStats = async (req, res) => {
     const stats = await Task.aggregate([
       {
         $match: {
-          createdBy: userId,
+          $or: [
+            { createdBy: userId },
+            { assignedTo: userId },
+          ],
         },
       },
       {
@@ -374,27 +377,22 @@ exports.updateTask = async (req, res) => {
       });
     }
 
-     const userId = req.user.userId;
+    const userId = req.user.userId;
     const role = req.user.role;
 
-    // ✅ FIXED: allow admin OR creator
-    if (role !== "admin" && task.createdBy.toString() !== userId) {
+    // ✅ FIXED PERMISSION
+    const isCreator = task.createdBy.toString() === userId;
+    const isAssigned = task.assignedTo?.toString() === userId;
+    const isAdmin = role === "admin";
+
+    if (!isAdmin && !isCreator && !isAssigned) {
       return res.status(403).json({
         success: false,
         message: "Not authorized to update this task",
       });
     }
 
-
-    // Ownership validation
-    // if (task.createdBy.toString() !== req.user.userId) {
-    //   return res.status(403).json({
-    //     success: false,
-    //     message: "Not authorized to update this task",
-    //   });
-    // }
-
-     // validate assignedTo if present
+    // validate assignedTo
     if (req.body.assignedTo) {
       const userExists = await User.findById(req.body.assignedTo);
       if (!userExists) {
@@ -424,8 +422,8 @@ exports.updateTask = async (req, res) => {
     const updatedTask = await task.save();
 
     const populatedTask = await Task.findById(updatedTask._id)
-    .populate("createdBy","name email",)
-    .populate("assignedTo", "name email");
+      .populate("createdBy", "name email")
+      .populate("assignedTo", "name email");
 
     res.status(200).json({
       success: true,
