@@ -1,7 +1,7 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
-export default function TaskCard({ task, users, onAssignUser }) {
+export default function TaskCard({ task, users, onAssignUser, onMoveTask }) {
   const {
     attributes,
     listeners,
@@ -22,27 +22,33 @@ export default function TaskCard({ task, users, onAssignUser }) {
     high: "bg-red-200 text-red-700",
   };
 
-  let deadlineStatusClass = "text-blue-500";
+  // let deadlineStatusClass = "text-blue-500";
 
-  if (task.deadline) {
-    const today = new Date();
-    const deadline = new Date(task.deadline);
+  // if (task.deadline) {
+  //   const today = new Date();
+  //   const deadline = new Date(task.deadline);
 
-    today.setHours(0, 0, 0, 0);
-    deadline.setHours(0, 0, 0, 0);
+  //   today.setHours(0, 0, 0, 0);
+  //   deadline.setHours(0, 0, 0, 0);
 
-    if (deadline < today) {
-      deadlineStatusClass = "text-red-500 font-semibold";
-    } else if (deadline.getTime() === today.getTime()) {
-      deadlineStatusClass = "text-yellow-500 font-semibold";
-    } else {
-      deadlineStatusClass = "text-blue-500";
-    }
-  }
+  //   if (deadline < today) {
+  //     deadlineStatusClass = "text-red-500 font-semibold";
+  //   } else if (deadline.getTime() === today.getTime()) {
+  //     deadlineStatusClass = "text-yellow-500 font-semibold";
+  //   } else {
+  //     deadlineStatusClass = "text-blue-500";
+  //   }
+  // }
 
-  const formattedPriority =
-    task.priority.charAt(0).toUpperCase() +
-    task.priority.slice(1).toLowerCase();
+  // const formattedPriority =
+  //   task.priority.charAt(0).toUpperCase() +
+  //   task.priority.slice(1).toLowerCase();
+  
+  const statuses = [
+    { id: "todo", label: "To Do" },
+    { id: "in-progress", label: "In Progress" },
+    { id: "done", label: "Done" },
+  ];
 
   return (
     <div
@@ -58,21 +64,21 @@ export default function TaskCard({ task, users, onAssignUser }) {
         {/* TITLE */}
         <h3 className="text-sm font-medium mb-2 truncate">{task.title}</h3>
 
-        {/* PRIORITY + DEADLINE */}
+        {/* PRIORITY */}
         <div className="flex justify-between text-xs items-center mb-2">
           <span
             className={`px-2 py-1 rounded ${
               priorityColors[task.priority] || "bg-gray-100"
             }`}
           >
-            {formattedPriority}
+             {/* {formattedPriority} */}
+            {task.priority}
           </span>
-
-          {task.deadline && (
+          {/* {task.deadline && (
             <span className={deadlineStatusClass}>
               {new Date(task.deadline).toLocaleDateString("en-GB")}
             </span>
-          )}
+          )} */}
         </div>
 
         {/* ASSIGN USER */}
@@ -91,10 +97,60 @@ export default function TaskCard({ task, users, onAssignUser }) {
           </select>
         </div>
 
-        {/* ✅ Assigned By */}
+        {/* ✅ MOVE BUTTONS */}
+        <div
+          className="flex flex-wrap gap-2 mt-3"
+          onPointerDown={(e) => e.stopPropagation()} // prevent drag conflict
+        >
+          {statuses.map((s) => (
+            <button
+              key={s.id}
+              onClick={() => onMoveTask(task._id, s.id)}
+              disabled={task.status === s.id}
+              className={`text-xs px-2 py-1 rounded border ${
+                task.status === s.id
+                  ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                  : "bg-white hover:bg-gray-100"
+              }`}
+            >
+              {s.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Assigned By */}
         <p className="mt-2 text-[13px] text-gray-700">
           Assigned by: {task.createdBy?.name || "You"}
         </p>
+        {/* MOVE TASK BUTTONS */}
+        <div className="flex gap-2 mt-3 flex-wrap">
+          {task.status !== "todo" && (
+            <button
+              onClick={() => onMoveTask(task._id, "todo")}
+              className="text-xs px-2 py-1 bg-gray-200 rounded hover:bg-gray-300"
+            >
+              To Do
+            </button>
+          )}
+
+          {task.status !== "in-progress" && (
+            <button
+              onClick={() => onMoveTask(task._id, "in-progress")}
+              className="text-xs px-2 py-1 bg-orange-200 rounded hover:bg-orange-300"
+            >
+              In Progress
+            </button>
+          )}
+
+          {task.status !== "done" && (
+            <button
+              onClick={() => onMoveTask(task._id, "done")}
+              className="text-xs px-2 py-1 bg-green-200 rounded hover:bg-green-300"
+            >
+              Done
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );

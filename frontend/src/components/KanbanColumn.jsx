@@ -11,6 +11,7 @@ export default function KanbanColumn({
   overColumn,
   users,            
   onAssignUser,     
+   onMoveTask,
 }) {
   const { setNodeRef, isOver } = useDroppable({
     id,
@@ -80,6 +81,7 @@ export default function KanbanColumn({
             task={task}
             users={users}                 
             onAssignUser={onAssignUser}   
+            onMoveTask={onMoveTask} 
           />
         ))}
 

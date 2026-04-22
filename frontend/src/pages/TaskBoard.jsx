@@ -97,6 +97,34 @@ export default function TaskBoard() {
     );
   };
 
+  /* MOVE TASK (button action) */
+const moveTask = async (taskId, targetCol) => {
+  const sourceCol = findColumn(taskId);
+  if (!sourceCol || sourceCol === targetCol) return;
+
+  const task = columns[sourceCol].find((t) => t._id === taskId);
+  if (!task) return;
+
+  // update UI instantly
+  setColumns((prev) => {
+    const sourceTasks = prev[sourceCol].filter((t) => t._id !== taskId);
+    const targetTasks = [...prev[targetCol], { ...task, status: targetCol }];
+
+    return {
+      ...prev,
+      [sourceCol]: sourceTasks,
+      [targetCol]: targetTasks,
+    };
+  });
+
+  // update backend
+  try {
+    await updateTask(taskId, { status: targetCol });
+  } catch (err) {
+    logError(err, { action: "MOVE_TASK_FAILED" });
+  }
+};
+
   /* DRAG START */
 
   const handleDragStart = (event) => {
@@ -276,6 +304,7 @@ export default function TaskBoard() {
                 overColumn={overColumn}
                 users={users}
                 onAssignUser={handleAssignUser}
+                onMoveTask={moveTask}
               />
             </SortableContext>
           ))}
