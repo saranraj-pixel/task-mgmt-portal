@@ -15,6 +15,7 @@ const AdminTasks = () => {
   const [selectedTask, setSelectedTask] = useState(null);
 
   const [filter, setFilter] = useState("all");
+  const [priorityFilter, setPriorityFilter] = useState("all");
 
   /* LOAD DATA */
   useEffect(() => {
@@ -61,12 +62,6 @@ const AdminTasks = () => {
     }
   };
 
-  /* FILTER */
-  const filteredTasks =
-    filter === "all"
-      ? tasks
-      : tasks.filter((t) => t.status === filter);
-
     const formatStatus = (status) => {
     if (status === "in-progress") return "In Progress";
     return status.charAt(0).toUpperCase() + status.slice(1);
@@ -84,6 +79,34 @@ const AdminTasks = () => {
         return "bg-gray-300 text-gray-700";
     }
   };
+
+  const formatPriority = (priority) => {
+    return priority.charAt(0).toUpperCase() + priority.slice(1);
+  };
+
+  const getPriorityStyle = (priority) => {
+    switch (priority) {
+      case "low":
+        return "bg-blue-200 text-blue-700";
+      case "medium":
+        return "bg-orange-200 text-orange-700";
+      case "high":
+        return "bg-red-200 text-red-700";
+      default:
+        return "bg-gray-200 text-gray-700";
+    }
+  };
+
+  /* FILTER */
+  const filteredTasks = tasks.filter((t) => {
+    const statusMatch = filter === "all" || t.status === filter;
+
+    const priorityMatch =
+      priorityFilter === "all" ||
+      (t.priority || "low").toLowerCase() === priorityFilter;
+
+    return statusMatch && priorityMatch;
+  });
 
   return (
     <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -111,24 +134,38 @@ const AdminTasks = () => {
     </button>
   </div>
 
-  {/* FILTERS */}
-  <div className="flex gap-2 overflow-x-auto pb-2 mb-5 scrollbar-hide">
-    {["all", "todo", "in-progress", "done"].map((f) => (
-      <button
-        key={f}
-        onClick={() => setFilter(f)}
-        className={`shrink-0 px-4 py-1.5 cursor-pointer rounded-full text-sm border transition ${
-          filter === f
-            ? "bg-blue-600 text-white border-blue-600"
-            : "bg-white text-gray-600 hover:bg-gray-200"
-        }`}
-      >
-            {f === "in-progress"
-              ? "In Progress"
-              : f.charAt(0).toUpperCase() + f.slice(1)}
-      </button>
-    ))}
-  </div>
+      {/* FILTER SECTION */}
+      <div className="bg-white border rounded-xl p-4 mb-6 shadow-sm">
+        <div className="flex flex-col sm:flex-row gap-4 sm:items-center sm:justify-between">
+          <h2 className="text-sm font-semibold text-gray-700">Filter Tasks</h2>
+
+          <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+            {/* STATUS DROPDOWN */}
+            <select
+              value={filter}
+              onChange={(e) => setFilter(e.target.value)}
+              className="border px-3 py-2 rounded-lg text-sm bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="all">All Status</option>
+              <option value="todo">Todo</option>
+              <option value="in-progress">In Progress</option>
+              <option value="done">Done</option>
+            </select>
+
+            {/* PRIORITY DROPDOWN */}
+            <select
+              value={priorityFilter}
+              onChange={(e) => setPriorityFilter(e.target.value)}
+              className="border px-3 py-2 rounded-lg text-sm bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-500"
+            >
+              <option value="all">All Priority</option>
+              <option value="low">Low</option>
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
+            </select>
+          </div>
+        </div>
+      </div>
 
   {/* TASK LIST */}
   <div className="space-y-4">
@@ -145,7 +182,7 @@ const AdminTasks = () => {
           className="bg-white border rounded-xl p-4 shadow-sm hover:shadow-md transition"
         >
           {/* GRID LAYOUT */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-center">
 
             {/* TITLE */}
             <div className="md:col-span-2">
@@ -168,6 +205,17 @@ const AdminTasks = () => {
               </span>
             </div>
 
+                {/* PRIORITY */}
+                <div>
+                  <span
+                    className={`inline-block text-xs sm:text-sm px-3 py-1 rounded-full font-medium ${getPriorityStyle(
+                      task.priority,
+                    )}`}
+                  >
+                    {formatPriority(task.priority || "low")}
+                  </span>
+                </div>
+
             {/* ACTIONS */}
             <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:justify-end">
 
@@ -177,9 +225,7 @@ const AdminTasks = () => {
 
                 <select
                   value={task.assignedTo?._id || ""}
-                  onChange={(e) =>
-                    handleAssign(task._id, e.target.value)
-                  }
+                  onChange={(e) => handleAssign(task._id, e.target.value)}
                   className="border px-2 py-1.5 rounded-md text-sm w-full sm:w-auto"
                 >
                   <option value="">Unassigned</option>
