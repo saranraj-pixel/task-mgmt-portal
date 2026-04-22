@@ -92,7 +92,7 @@ export default function TaskCard({ task, users, onAssignUser }) {
         </div>
 
         {/* ✅ Assigned By */}
-        <p className="text-[11px] text-gray-400">
+        <p className="mt-2 text-[13px] text-gray-700">
           Assigned by: {task.createdBy?.name || "You"}
         </p>
       </div>

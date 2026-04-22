@@ -189,7 +189,7 @@ const AdminTasks = () => {
               <h3 className="font-semibold text-gray-800 text-sm sm:text-base">
                 {task.title}
               </h3>
-              <p className="text-xs text-gray-500">
+              <p className=" mt-2 text-xs text-gray-700">
                 Created by: {task.createdBy?.name || "Unknown"}
               </p>
             </div>
