@@ -31,6 +31,24 @@ const Tasks = () => {
 
   const [users, setUsers] = useState([]);
 
+  // In Tasks.jsx - add this state and fetch user info
+const [currentUser, setCurrentUser] = useState(null);
+
+useEffect(() => {
+  // Get current user from localStorage or auth context
+  const getUser = async () => {
+    try {
+      const userStr = localStorage.getItem('user');
+      if (userStr) {
+        setCurrentUser(JSON.parse(userStr));
+      }
+    } catch (err) {
+      console.error("Error loading user:", err);
+    }
+  };
+  getUser();
+}, []);
+
   // Read values from URL
   const page = Number(searchParams.get("page")) || 1;
   const search = searchParams.get("search") || "";
@@ -563,6 +581,7 @@ const Tasks = () => {
         task={selectedTask}
         onSave={fetchTasks}
         users={users}
+        currentUser={currentUser}  // ← Add this line
       />
 
       <ConfirmDialog

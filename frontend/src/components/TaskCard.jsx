@@ -1,7 +1,13 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
-export default function TaskCard({ task, users, onAssignUser, onMoveTask }) {
+export default function TaskCard({ 
+  task, 
+  users, 
+  onAssignUser, 
+  onMoveTask,
+  currentUserId 
+}) {
   const {
     attributes,
     listeners,
@@ -50,6 +56,54 @@ export default function TaskCard({ task, users, onAssignUser, onMoveTask }) {
     { id: "done", label: "Done" },
   ];
 
+  // Helper function to safely get user ID
+  const getUserId = (user) => {
+    if (!user) return null;
+    return user._id?.toString() || user.toString();
+  };
+
+  // Determine relationship with current user
+  const getTaskRelationship = () => {
+    if (!currentUserId) return null;
+    
+    const createdById = getUserId(task.createdBy);
+    const assignedToId = getUserId(task.assignedTo);
+    const currentUserIdStr = currentUserId.toString();
+    
+    const isCreatedByMe = createdById === currentUserIdStr;
+    const isAssignedToMe = assignedToId === currentUserIdStr;
+    
+    if (isCreatedByMe && isAssignedToMe) {
+      return { text: "📌 Assigned & Created by me", type: "both", show: true };
+    } else if (isAssignedToMe) {
+      return { text: "📋 Assigned to me", type: "assigned", show: true };
+    } else if (isCreatedByMe) {
+      return { text: "✨ Created by me", type: "created", show: true };
+    }
+    
+    return { text: "", type: "other", show: false };
+  };
+
+  const getBadgeColor = (type) => {
+    switch(type) {
+      case "assigned":
+        return "bg-blue-100 text-blue-800 border-blue-200";
+      case "created":
+        return "bg-purple-100 text-purple-800 border-purple-200";
+      case "both":
+        return "bg-green-100 text-green-800 border-green-200";
+      default:
+        return "bg-gray-100 text-gray-800 border-gray-200";
+    }
+  };
+
+  const relationship = getTaskRelationship();
+  
+  // Check if current user is the creator
+  const isCreator = getUserId(task.createdBy) === currentUserId?.toString();
+  
+  // Check if current user is the assignee
+
   return (
     <div
       ref={setNodeRef}
@@ -61,95 +115,84 @@ export default function TaskCard({ task, users, onAssignUser, onMoveTask }) {
       }`}
     >
       <div className="bg-white border rounded-lg p-4 shadow-sm hover:shadow-md transition">
+        {/* RELATIONSHIP BADGE - Only show if task is related to current user */}
+        {relationship.show && (
+          <div className="mb-2">
+            <span className={`text-xs px-2 py-1 rounded-full border ${getBadgeColor(relationship.type)}`}>
+              {relationship.text}
+            </span>
+          </div>
+        )}
+
         {/* TITLE */}
         <h3 className="text-sm font-medium mb-2 truncate">{task.title}</h3>
 
-        {/* PRIORITY */}
-        <div className="flex justify-between text-xs items-center mb-2">
+        {/* PRIORITY & DEADLINE */}
+        <div className="flex justify-between text-xs items-center mb-3">
           <span
             className={`px-2 py-1 rounded ${
               priorityColors[task.priority] || "bg-gray-100"
             }`}
           >
-             {/* {formattedPriority} */}
             {task.priority}
           </span>
-          {/* {task.deadline && (
-            <span className={deadlineStatusClass}>
-              {new Date(task.deadline).toLocaleDateString("en-GB")}
+          
+          {task.deadline && (
+            <span className="text-gray-500 text-xs">
+              📅 {new Date(task.deadline).toLocaleDateString("en-GB")}
             </span>
-          )} */}
+          )}
         </div>
 
-        {/* ASSIGN USER */}
-        <div onPointerDown={(e) => e.stopPropagation()}>
+        {/* ASSIGN USER DROPDOWN */}
+        <div onPointerDown={(e) => e.stopPropagation()} className="mb-3">
+          <label className="text-xs text-gray-600 mb-1 block">Assign to:</label>
           <select
             value={task.assignedTo?._id || ""}
             onChange={(e) => onAssignUser(task._id, e.target.value)}
-            className="w-full border rounded px-2 py-1 text-xs"
+            className="w-full border rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
           >
             <option value="">Unassigned</option>
             {users?.map((user) => (
               <option key={user._id} value={user._id}>
-                {user.name}
+                {user.name} {getUserId(user) === currentUserId?.toString() ? "(You)" : ""}
               </option>
             ))}
           </select>
         </div>
 
-        {/* ✅ MOVE BUTTONS */}
+        {/* CREATED BY INFO */}
+        <div className="mb-3">
+          <p className="text-xs text-gray-500">
+            Created by: {task.createdBy?.name || "Unknown"}
+            {isCreator && " (You)"}
+          </p>
+          {/* {task.assignedTo && !isAssignee && task.assignedTo.name !== task.createdBy?.name && (
+            <p className="text-xs text-gray-500 mt-1">
+              Assigned to: {task.assignedTo?.name || "Unassigned"}
+            </p>
+          )} */}
+        </div>
+
+        {/* MOVE TASK BUTTONS */}
         <div
-          className="flex flex-wrap gap-2 mt-3"
-          onPointerDown={(e) => e.stopPropagation()} // prevent drag conflict
+          className="flex flex-wrap gap-2"
+          onPointerDown={(e) => e.stopPropagation()}
         >
           {statuses.map((s) => (
             <button
               key={s.id}
               onClick={() => onMoveTask(task._id, s.id)}
               disabled={task.status === s.id}
-              className={`text-xs px-2 py-1 rounded border ${
+              className={`text-xs px-2 py-1 rounded border transition ${
                 task.status === s.id
                   ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                  : "bg-white hover:bg-gray-100"
+                  : "bg-white hover:bg-gray-100 border-gray-300"
               }`}
             >
               {s.label}
             </button>
           ))}
-        </div>
-
-        {/* Assigned By */}
-        <p className="mt-2 text-[13px] text-gray-700">
-          Assigned by: {task.createdBy?.name || "You"}
-        </p>
-        {/* MOVE TASK BUTTONS */}
-        <div className="flex gap-2 mt-3 flex-wrap">
-          {task.status !== "todo" && (
-            <button
-              onClick={() => onMoveTask(task._id, "todo")}
-              className="text-xs px-2 py-1 bg-gray-200 rounded hover:bg-gray-300"
-            >
-              To Do
-            </button>
-          )}
-
-          {task.status !== "in-progress" && (
-            <button
-              onClick={() => onMoveTask(task._id, "in-progress")}
-              className="text-xs px-2 py-1 bg-orange-200 rounded hover:bg-orange-300"
-            >
-              In Progress
-            </button>
-          )}
-
-          {task.status !== "done" && (
-            <button
-              onClick={() => onMoveTask(task._id, "done")}
-              className="text-xs px-2 py-1 bg-green-200 rounded hover:bg-green-300"
-            >
-              Done
-            </button>
-          )}
         </div>
       </div>
     </div>

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { getTasks, updateTask } from "../services/taskService";
 import { getUsers } from "../services/authService";
+import { useAuth } from "../context/AuthContext"; // Import your auth context
 import Skeleton from "../components/Skeleton";
 
 import {
@@ -40,6 +41,9 @@ export default function TaskBoard() {
   const [activeTask, setActiveTask] = useState(null);
   const [overColumn, setOverColumn] = useState(null);
   const [loading, setLoading] = useState(true);
+  
+  // Get current user from auth context
+  const { user: currentUser } = useAuth(); // Adjust based on your auth context structure
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -48,7 +52,6 @@ export default function TaskBoard() {
   );
 
   /* LOAD TASKS */
-
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -88,68 +91,56 @@ export default function TaskBoard() {
   }, []);
 
   /* FIND COLUMN */
-
   const findColumn = (id) => {
     if (columns[id]) return id;
-
     return Object.keys(columns).find((col) =>
       columns[col].some((task) => task._id === id),
     );
   };
 
   /* MOVE TASK (button action) */
-const moveTask = async (taskId, targetCol) => {
-  const sourceCol = findColumn(taskId);
-  if (!sourceCol || sourceCol === targetCol) return;
+  const moveTask = async (taskId, targetCol) => {
+    const sourceCol = findColumn(taskId);
+    if (!sourceCol || sourceCol === targetCol) return;
 
-  const task = columns[sourceCol].find((t) => t._id === taskId);
-  if (!task) return;
+    const task = columns[sourceCol].find((t) => t._id === taskId);
+    if (!task) return;
 
-  // update UI instantly
-  setColumns((prev) => {
-    const sourceTasks = prev[sourceCol].filter((t) => t._id !== taskId);
-    const targetTasks = [...prev[targetCol], { ...task, status: targetCol }];
+    setColumns((prev) => {
+      const sourceTasks = prev[sourceCol].filter((t) => t._id !== taskId);
+      const targetTasks = [...prev[targetCol], { ...task, status: targetCol }];
 
-    return {
-      ...prev,
-      [sourceCol]: sourceTasks,
-      [targetCol]: targetTasks,
-    };
-  });
+      return {
+        ...prev,
+        [sourceCol]: sourceTasks,
+        [targetCol]: targetTasks,
+      };
+    });
 
-  // update backend
-  try {
-    await updateTask(taskId, { status: targetCol });
-  } catch (err) {
-    logError(err, { action: "MOVE_TASK_FAILED" });
-  }
-};
+    try {
+      await updateTask(taskId, { status: targetCol });
+    } catch (err) {
+      logError(err, { action: "MOVE_TASK_FAILED" });
+    }
+  };
 
   /* DRAG START */
-
   const handleDragStart = (event) => {
     const id = event.active.id;
-
     const column = findColumn(id);
     if (!column) return;
-
     const task = columns[column].find((t) => t._id === id);
-
     setActiveTask(task);
   };
 
   /* DRAG OVER */
-
   const handleDragOver = ({ over }) => {
     if (!over) return;
-
     const column = findColumn(over.id) || over.id;
-
     setOverColumn(column);
   };
 
   /* DRAG END */
-
   const handleDragEnd = async ({ active, over }) => {
     setActiveTask(null);
     setOverColumn(null);
@@ -161,11 +152,8 @@ const moveTask = async (taskId, targetCol) => {
 
     if (!sourceCol || !targetCol) return;
 
-    /* REORDER SAME COLUMN */
-
     if (sourceCol === targetCol) {
       const oldIndex = columns[sourceCol].findIndex((t) => t._id === active.id);
-
       const newIndex = columns[sourceCol].findIndex((t) => t._id === over.id);
 
       if (oldIndex !== newIndex && newIndex !== -1) {
@@ -174,14 +162,10 @@ const moveTask = async (taskId, targetCol) => {
           [sourceCol]: arrayMove(prev[sourceCol], oldIndex, newIndex),
         }));
       }
-
       return;
     }
 
-    /* MOVE BETWEEN COLUMNS */
-
     const task = columns[sourceCol].find((t) => t._id === active.id);
-
     if (!task) return;
 
     const overIndex = columns[targetCol].findIndex((t) => t._id === over.id);
@@ -189,9 +173,7 @@ const moveTask = async (taskId, targetCol) => {
     setColumns((prev) => {
       const sourceTasks = prev[sourceCol].filter((t) => t._id !== active.id);
       const targetTasks = [...prev[targetCol]];
-
       const insertIndex = overIndex >= 0 ? overIndex : targetTasks.length;
-
       targetTasks.splice(insertIndex, 0, { ...task, status: targetCol });
 
       return {
@@ -220,7 +202,6 @@ const moveTask = async (taskId, targetCol) => {
 
       setColumns((prev) => {
         const updated = { ...prev };
-
         Object.keys(updated).forEach((col) => {
           updated[col] = updated[col].map((task) =>
             task._id === taskId
@@ -231,7 +212,6 @@ const moveTask = async (taskId, targetCol) => {
               : task,
           );
         });
-
         return updated;
       });
     } catch (err) {
@@ -245,15 +225,12 @@ const moveTask = async (taskId, targetCol) => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {COLUMN_CONFIG.map((col) => (
             <div key={col.id} className="bg-white rounded-xl overflow-hidden shadow-sm border border-gray-200">
-              {/* Header Skeleton */}
               <div className="h-14 bg-gray-100 flex items-center px-4">
                 <Skeleton className="h-5 w-32" />
                 <div className="ml-auto">
                     <Skeleton className="h-6 w-8 rounded-full" />
                 </div>
               </div>
-              
-              {/* Cards Skeleton */}
               <div className="p-4 space-y-4">
                 {[1, 2, 3].map((i) => (
                   <div key={i} className="border rounded-lg p-4 space-y-3">
@@ -274,48 +251,48 @@ const moveTask = async (taskId, targetCol) => {
 
   return (
     <>
-    <Helmet>
-        <title> Board | Task Manager</title>
+      <Helmet>
+        <title>Board | Task Manager</title>
         <meta
           name="description"
-          content="Overview of your board todo, in progress, done everything you can see and drag and drop according to the task stats "
+          content="Overview of your board todo, in progress, done everything you can see and drag and drop according to the task stats"
         />
       </Helmet>
-    <div className="max-w-7xl mx-auto px-4 md:px-6 py-6">
-      <DndContext
-        sensors={sensors}
-        collisionDetection={pointerWithin}
-        onDragStart={handleDragStart}
-        onDragOver={handleDragOver}
-        onDragEnd={handleDragEnd}
-      >
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {COLUMN_CONFIG.map((col) => (
-            <SortableContext
-              key={col.id}
-              items={columns[col.id].map((t) => t._id)}
-              strategy={verticalListSortingStrategy}
-            >
-              <KanbanColumn
-                id={col.id}
-                title={col.title}
-                tasks={columns[col.id]}
-                activeTask={activeTask}
-                overColumn={overColumn}
-                users={users}
-                onAssignUser={handleAssignUser}
-                onMoveTask={moveTask}
-              />
-            </SortableContext>
-          ))}
-        </div>
+      <div className="max-w-7xl mx-auto px-4 md:px-6 py-6">
+        <DndContext
+          sensors={sensors}
+          collisionDetection={pointerWithin}
+          onDragStart={handleDragStart}
+          onDragOver={handleDragOver}
+          onDragEnd={handleDragEnd}
+        >
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {COLUMN_CONFIG.map((col) => (
+              <SortableContext
+                key={col.id}
+                items={columns[col.id].map((t) => t._id)}
+                strategy={verticalListSortingStrategy}
+              >
+                <KanbanColumn
+                  id={col.id}
+                  title={col.title}
+                  tasks={columns[col.id]}
+                  activeTask={activeTask}
+                  overColumn={overColumn}
+                  users={users}
+                  onAssignUser={handleAssignUser}
+                  onMoveTask={moveTask}
+                  currentUserId={currentUser?._id} // Pass current user ID from context
+                />
+              </SortableContext>
+            ))}
+          </div>
 
-        <DragOverlay adjustScale={false}>
-          {activeTask && <DragOverlayCard task={activeTask} />}
-        </DragOverlay>
-      </DndContext>
-    </div>
-  </>
-
+          <DragOverlay adjustScale={false}>
+            {activeTask && <DragOverlayCard task={activeTask} />}
+          </DragOverlay>
+        </DndContext>
+      </div>
+    </>
   );
 }

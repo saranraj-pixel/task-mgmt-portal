@@ -65,16 +65,12 @@ exports.createTask = async (req, res) => {
 // @desc    Get All Tasks (User Specific)
 // @route   GET /api/tasks
 // @access  Private
+// In your getAllTasks controller
 exports.getAllTasks = async (req, res) => {
   try {
-    // pagination params
-
     const page = Number(req.query.page) || 1;
     const limit = Number(req.query.limit) || 10;
-
     const skip = (page - 1) * limit;
-
-    // query params
 
     const {
       status,
@@ -87,17 +83,14 @@ exports.getAllTasks = async (req, res) => {
     } = req.query;
 
     const userId = req.user.userId;
-    const role = req.user.role; // 👈 IMPORTANT
+    const role = req.user.role;
 
-    // ================= BASE FILTER =================
     let filter = {};
 
-    // ================= ROLE LOGIC =================
+    // ROLE LOGIC
     if (role === "admin") {
-      // ADMIN SEES EVERYTHING (for board management)
       filter = {};
     } else {
-      // USER SEES ONLY THEIR TASKS
       filter = {
         $or: [
           { createdBy: userId },
@@ -106,31 +99,26 @@ exports.getAllTasks = async (req, res) => {
       };
     }
 
-    // ================= STATUS =================
+    // Add other filters (status, priority, etc.)
     if (status) filter.status = status;
-
-    // ================= PRIORITY =================
     if (priority) filter.priority = priority;
-
-    // ================= DEADLINE =================
-
+    
     if (deadlineFrom || deadlineTo) {
       filter.deadline = {};
       if (deadlineFrom) filter.deadline.$gte = new Date(deadlineFrom);
       if (deadlineTo) filter.deadline.$lte = new Date(deadlineTo);
     }
 
-    // ================= SEARCH =================
     if (search) {
       filter.$and = [
-        role === "admin"
-          ? {}
-          : {
-              $or: [
-                { createdBy: userId },
-                { assignedTo: userId },
-              ],
-            },
+        // role === "admin"
+        //   ? {}
+        //   : {
+        //       $or: [
+        //         { createdBy: userId },
+        //         { assignedTo: userId },
+        //       ],
+        //     },
         {
           $or: [
             { title: { $regex: search, $options: "i" } },
@@ -140,29 +128,44 @@ exports.getAllTasks = async (req, res) => {
       ];
     }
 
-    // Sorting
-
     const sortOrder = order === "asc" ? 1 : -1;
-
-    // Execute Query
-
     const totalCount = await Task.countDocuments(filter);
 
     const tasks = await Task.find(filter)
-      .populate("assignedTo", "name email") // who received task
-      .populate("createdBy", "name email") // who assigned task
+      .populate("assignedTo", "_id name email") // Make sure _id is included
+      .populate("createdBy", "_id name email") // Make sure _id is included
       .sort({ [sortBy]: sortOrder })
       .skip(skip)
       .limit(limit);
+
+    // Add relationship info for each task
+    const tasksWithRelations = tasks.map(task => {
+      const taskObj = task.toObject();
+      
+      // Convert IDs to strings for comparison
+      const createdById = taskObj.createdBy?._id?.toString();
+      const assignedToId = taskObj.assignedTo?._id?.toString();
+      
+      taskObj.relationship = {
+        isCreatedByMe: createdById === userId,
+        isAssignedToMe: assignedToId === userId,
+      };
+      
+      return taskObj;
+    });
 
     const totalPages = Math.ceil(totalCount / limit);
 
     res.status(200).json({
       success: true,
-      tasks,
+      tasks: tasksWithRelations,
       totalCount,
       currentPage: page,
       totalPages,
+      currentUser: {
+        id: userId,
+        role: role
+      }
     });
   } catch (error) {
     res.status(500).json({
@@ -363,6 +366,9 @@ exports.getTaskById = async (req, res) => {
 // @desc Update task
 // @route PUT /api/tasks/:id
 // @access Private
+// @desc Update task
+// @route PUT /api/tasks/:id
+// @access Private
 exports.updateTask = async (req, res) => {
   try {
     const { id } = req.params;
@@ -380,11 +386,12 @@ exports.updateTask = async (req, res) => {
     const userId = req.user.userId;
     const role = req.user.role;
 
-    // ✅ FIXED PERMISSION
+    // ✅ Fixed Permission
     const isCreator = task.createdBy.toString() === userId;
     const isAssigned = task.assignedTo?.toString() === userId;
     const isAdmin = role === "admin";
 
+    // ❌ No access at all
     if (!isAdmin && !isCreator && !isAssigned) {
       return res.status(403).json({
         success: false,
@@ -392,29 +399,67 @@ exports.updateTask = async (req, res) => {
       });
     }
 
-    // validate assignedTo
-    if (req.body.assignedTo) {
-      const userExists = await User.findById(req.body.assignedTo);
-      if (!userExists) {
-        return res.status(404).json({
-          success: false,
-          message: "Assigned user not found",
-        });
-      }
+    // ================= ROLE-BASED FIELD CONTROL =================
+
+    let allowedFields = [];
+
+    if (isAdmin || isCreator) {
+      // ✅ Full access
+      allowedFields = [
+        "title",
+        "description",
+        "priority",
+        "status",
+        "deadline",
+        "assignedTo",
+      ];
+    } else if (isAssigned) {
+      // ⚠️ ONLY status update allowed
+      allowedFields = ["status"];
     }
 
-    // Allowed fields
-    const allowedFields = [
-      "title",
-      "description",
-      "priority",
-      "status",
-      "deadline",
-      "assignedTo",
-    ];
+    // 🚫 Prevent invalid updates
+    const updates = Object.keys(req.body);
 
-    allowedFields.forEach((field) => {
-      if (req.body[field] !== undefined) {
+    const isValidUpdate = updates.every((field) =>
+      allowedFields.includes(field)
+    );
+
+    if (!isValidUpdate) {
+      return res.status(403).json({
+        success: false,
+        message: "You can only update allowed fields for this task",
+      });
+    }
+
+    // 🔥 FIX: Handle assignedTo empty string conversion
+    if (req.body.assignedTo !== undefined && (isAdmin || isCreator)) {
+      // Convert empty string to null
+      let assignedToValue = req.body.assignedTo;
+      
+      if (assignedToValue === "" || assignedToValue === "null" || assignedToValue === "undefined") {
+        assignedToValue = null;
+      }
+      
+      // Only validate if there's an actual user ID
+      if (assignedToValue && assignedToValue !== null) {
+        const userExists = await User.findById(assignedToValue);
+        if (!userExists) {
+          return res.status(404).json({
+            success: false,
+            message: "Assigned user not found",
+          });
+        }
+      }
+      
+      req.body.assignedTo = assignedToValue;
+    }
+
+    // ✅ Apply updates
+    updates.forEach((field) => {
+      if (field === "assignedTo" && req.body[field] === null) {
+        task[field] = null;
+      } else {
         task[field] = req.body[field];
       }
     });
