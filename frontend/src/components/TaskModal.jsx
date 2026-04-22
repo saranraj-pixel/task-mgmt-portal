@@ -5,7 +5,7 @@ import { toast } from "react-toastify";
 import { logError } from "../../utils/logger";
 import CustomDatePicker from "../components/CustomDatePicker";
 
-const TaskModal = ({ isOpen, onClose, task, onSave }) => {
+const TaskModal = ({ isOpen, onClose, task, onSave, users = [] }) => {
   const isEdit = !!task;
 
   const {
@@ -24,6 +24,7 @@ const TaskModal = ({ isOpen, onClose, task, onSave }) => {
         priority: task.priority,
         status: task.status,
         deadline: task.deadline?.slice(0, 10),
+        assignedTo: task.assignedTo?._id || "",
       });
     } else {
       reset({
@@ -32,6 +33,7 @@ const TaskModal = ({ isOpen, onClose, task, onSave }) => {
         priority: "medium",
         status: "todo",
         deadline: "",
+        assignedTo: "",
       });
     }
   }, [task, reset]);
@@ -61,9 +63,12 @@ const TaskModal = ({ isOpen, onClose, task, onSave }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-      <div className="bg-white w-full max-w-lg rounded-xl p-6 shadow-lg">
-        <h2 className="text-xl font-bold mb-4">
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-3 sm:px-4">
+      <div
+        className="bg-white w-full max-w-lg sm:max-w-xl rounded-xl shadow-lg 
+                    max-h-[90vh] overflow-y-auto p-4 sm:p-6"
+      >
+        <h2 className="text-lg sm:text-xl font-bold mb-4">
           {isEdit ? "Edit Task" : "Create Task"}
         </h2>
 
@@ -73,10 +78,10 @@ const TaskModal = ({ isOpen, onClose, task, onSave }) => {
             <label className="block font-medium text-sm mb-1">Title</label>
             <input
               {...register("title", { required: "Title is required" })}
-              className="w-full border focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-lg px-3 py-2"
+              className="w-full border focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-lg px-3 py-2 text-sm sm:text-base"
             />
             {errors.title && (
-              <p className="text-red-500 text-sm mt-1">
+              <p className="text-red-500 text-xs sm:text-sm mt-1">
                 {errors.title.message}
               </p>
             )}
@@ -103,43 +108,61 @@ const TaskModal = ({ isOpen, onClose, task, onSave }) => {
                   value.trim().length > 0 || "Description cannot be empty",
               })}
               rows="3"
-              className="w-full border focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-lg px-3 py-2"
+              className="w-full border focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-lg px-3 py-2 text-sm sm:text-base resize-none"
             />
 
             {errors.description && (
-              <p className="text-red-500 text-sm">
+              <p className="text-red-500 text-xs sm:text-sm">
                 {errors.description.message}
               </p>
             )}
           </div>
 
-          {/* PRIORITY */}
-          <div>
-            <label className="block font-medium text-sm mb-1">Priority</label>
-            <select
-              {...register("priority")}
-              className="w-full border focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer outline-none rounded-lg px-3 py-2"
-            >
-              <option value="low">Low</option>
-              <option value="medium">Medium</option>
-              <option value="high">High</option>
-            </select>
-          </div>
-
-          {/* STATUS (ONLY EDIT) */}
-          {isEdit && (
+          {/* PRIORITY + STATUS (GRID on desktop) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block font-medium text-sm mb-1">Status</label>
+              <label className="block font-medium text-sm mb-1">Priority</label>
               <select
-                {...register("status")}
-                className="w-full border focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer outline-none rounded-lg px-3 py-2"
+                {...register("priority")}
+                className="w-full border focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-lg px-3 py-2 text-sm sm:text-base"
               >
-                <option value="todo">Todo</option>
-                <option value="in-progress">In Progress</option>
-                <option value="done">Done</option>
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
               </select>
             </div>
-          )}
+
+            {isEdit && (
+              <div>
+                <label className="block font-medium text-sm mb-1">Status</label>
+                <select
+                  {...register("status")}
+                  className="w-full border focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-lg px-3 py-2 text-sm sm:text-base"
+                >
+                  <option value="todo">Todo</option>
+                  <option value="in-progress">In Progress</option>
+                  <option value="done">Done</option>
+                </select>
+              </div>
+            )}
+          </div>
+
+          {/* ASSIGN USER */}
+          <div>
+            <label className="block font-medium text-sm mb-1">Assign To</label>
+
+            <select
+              {...register("assignedTo")}
+              className="w-full border focus:ring-2 focus:ring-blue-500 rounded-lg px-3 py-2 text-sm sm:text-base"
+            >
+              <option value="">Unassigned</option>
+              {users.map((user) => (
+                <option key={user._id} value={user._id}>
+                  {user.name || user.email}
+                </option>
+              ))}
+            </select>
+          </div>
 
           {/* DEADLINE */}
           <div>
@@ -168,31 +191,31 @@ const TaskModal = ({ isOpen, onClose, task, onSave }) => {
                   onChange={field.onChange}
                   placeholder="Select deadline"
                   className="w-full"
-                  minDate={new Date()} // prevents past selection
+                  minDate={new Date()}
                 />
               )}
             />
 
             {errors.deadline && (
-              <p className="text-red-500 text-sm mt-1">
+              <p className="text-red-500 text-xs sm:text-sm mt-1">
                 {errors.deadline.message}
               </p>
             )}
           </div>
 
           {/* BUTTONS */}
-          <div className="flex justify-end gap-3 pt-2">
+          <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-3 pt-2">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 border hover:bg-gray-100 rounded-lg cursor-pointer"
+              className="w-full sm:w-auto px-4 py-2 border hover:bg-gray-100 rounded-lg cursor-pointer"
             >
               Cancel
             </button>
 
             <button
               type="submit"
-              className="px-4 py-2 font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-lg cursor-pointer"
+              className="w-full sm:w-auto px-4 py-2 font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-lg cursor-pointer"
             >
               {isEdit ? "Update Task" : "Create Task"}
             </button>

@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { getTasks, deleteTask } from "../services/taskService";
+import { getUsers } from "../services/authService";
 import { FiEdit, FiTrash2, FiPlus } from "react-icons/fi";
 import TaskModal from "../components/TaskModal";
 import ConfirmDialog from "../components/ConfirmDialog";
@@ -28,6 +29,8 @@ const Tasks = () => {
 
   const [searchInput, setSearchInput] = useState("");
 
+  const [users, setUsers] = useState([]);
+
   // Read values from URL
   const page = Number(searchParams.get("page")) || 1;
   const search = searchParams.get("search") || "";
@@ -40,6 +43,19 @@ const Tasks = () => {
   useEffect(() => {
     setSearchInput(search);
   }, [search]);
+
+  useEffect(() => {
+  const fetchUsers = async () => {
+    try {
+      const res = await getUsers();
+      setUsers(res?.users || []);
+    } catch (err) {
+      logError(err, { action: "FETCH_USERS_FAILED" });
+    }
+  };
+
+  fetchUsers();
+}, []);
 
   // Update URL params
   const updateParams = useCallback(
@@ -546,6 +562,7 @@ const Tasks = () => {
         onClose={() => setIsModalOpen(false)}
         task={selectedTask}
         onSave={fetchTasks}
+        users={users}
       />
 
       <ConfirmDialog

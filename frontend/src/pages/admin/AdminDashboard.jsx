@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getAdminDashboard } from "../../services/authService";
+import { getAdminDashboard, getUsers } from "../../services/authService";
 import {
   Users,
   CheckCircle,
@@ -15,6 +15,8 @@ const AdminDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const [users, setUsers] = useState([]);
+
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
 
 const openCreateTask = () => setIsTaskModalOpen(true);
@@ -23,10 +25,15 @@ const closeCreateTask = () => setIsTaskModalOpen(false);
   const fetchDashboard = async () => {
     try {
       setLoading(true);
-      const res = await getAdminDashboard();
-      setData(res.data);
+      const [dashboardRes, usersRes] = await Promise.all([
+      getAdminDashboard(),
+    getUsers(),
+    ]);
+
+    setData(dashboardRes.data);
+    setUsers(usersRes?.users || []);
     } catch (err) {
-      setError("Failed to load dashboard", err);
+      setError("Failed to load dashboard",err);
     } finally {
       setLoading(false);
     }
@@ -209,6 +216,7 @@ const closeCreateTask = () => setIsTaskModalOpen(false);
   isOpen={isTaskModalOpen}
   onClose={closeCreateTask}
   task={null}
+  users={users} 
   onSave={fetchDashboard} // refresh dashboard after task creation
 />
     </div>

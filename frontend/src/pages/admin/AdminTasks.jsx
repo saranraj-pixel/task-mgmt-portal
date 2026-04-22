@@ -179,6 +179,7 @@ const AdminTasks = () => {
         isOpen={openModal}
         onClose={() => setOpenModal(false)}
         task={selectedTask}
+        users={users} 
         onSave={() => window.location.reload()}
       />
     </div>
