@@ -82,11 +82,18 @@ export const AuthProvider = ({ children }) => {
       if (decoded.exp * 1000 < Date.now()) {
         logout();
       } else {
+        const userData = storedUser
+          ? JSON.parse(storedUser)
+          : {
+              id: decoded.id,
+              role: decoded.role, // ✅ ensure role always exists
+            };
+
         dispatch({
           type: "LOGIN",
           payload: {
             token,
-            user: storedUser ? JSON.parse(storedUser) : decoded,
+            user: userData,
           },
         });
       }
@@ -107,6 +114,8 @@ export const AuthProvider = ({ children }) => {
         token: state.token,
         isAuthenticated: state.isAuthenticated,
         loading: state.loading,
+        isAdmin: state.user?.role === "admin",
+        isUser: state.user?.role === "user",
         login,
         logout,
       }}

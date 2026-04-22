@@ -1,7 +1,7 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
-export default function TaskCard({ task }) {
+export default function TaskCard({ task, users, onAssignUser }) {
   const {
     attributes,
     listeners,
@@ -50,14 +50,16 @@ export default function TaskCard({ task }) {
       style={style}
       {...attributes}
       {...listeners}
-      className={`cursor-grab active:cursor-grabbing transition
-      ${isDragging ? "opacity-40 scale-95" : ""}
-      `}
+      className={`cursor-grab active:cursor-grabbing transition ${
+        isDragging ? "opacity-40 scale-95" : ""
+      }`}
     >
       <div className="bg-white border rounded-lg p-4 shadow-sm hover:shadow-md transition">
+        {/* TITLE */}
         <h3 className="text-sm font-medium mb-2 truncate">{task.title}</h3>
 
-        <div className="flex justify-between text-xs items-center">
+        {/* PRIORITY + DEADLINE */}
+        <div className="flex justify-between text-xs items-center mb-2">
           <span
             className={`px-2 py-1 rounded ${
               priorityColors[task.priority] || "bg-gray-100"
@@ -72,6 +74,27 @@ export default function TaskCard({ task }) {
             </span>
           )}
         </div>
+
+        {/* ASSIGN USER */}
+        <div onPointerDown={(e) => e.stopPropagation()}>
+          <select
+            value={task.assignedTo?._id || ""}
+            onChange={(e) => onAssignUser(task._id, e.target.value)}
+            className="w-full border rounded px-2 py-1 text-xs"
+          >
+            <option value="">Unassigned</option>
+            {users?.map((user) => (
+              <option key={user._id} value={user._id}>
+                {user.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* ✅ Assigned By */}
+        <p className="text-[11px] text-gray-400">
+          Assigned by: {task.createdBy?.name || "You"}
+        </p>
       </div>
     </div>
   );

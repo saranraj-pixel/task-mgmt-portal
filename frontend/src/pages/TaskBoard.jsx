@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { getTasks, updateTask } from "../services/taskService";
+import { getUsers } from "../services/authService";
 import Skeleton from "../components/Skeleton";
 
 import {
@@ -35,6 +36,7 @@ export default function TaskBoard() {
     done: [],
   });
 
+  const [users, setUsers] = useState([]);
   const [activeTask, setActiveTask] = useState(null);
   const [overColumn, setOverColumn] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -48,15 +50,19 @@ export default function TaskBoard() {
   /* LOAD TASKS */
 
   useEffect(() => {
-    const fetchTasks = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true);
-        const res = await getTasks({
-          page: 1,
-          limit: 1000,
-        });
 
-        const tasks = res?.tasks || [];
+        const [taskRes, userRes] = await Promise.all([
+          getTasks({ page: 1, limit: 1000 }),
+          getUsers(),
+        ]);
+
+        const tasks = taskRes?.tasks || [];
+        const usersData = userRes?.users || [];
+
+        setUsers(usersData);
 
         const grouped = {
           todo: [],
@@ -72,17 +78,13 @@ export default function TaskBoard() {
 
         setColumns(grouped);
       } catch (err) {
-        logError(err, {
-          action: "FETCH_TASKS_FAILED",
-          page: 1,
-          limit: 1000,
-        });
+        logError(err, { action: "FETCH_TASKS_FAILED", page: 1, limit: 1000 });
       } finally {
         setLoading(false);
       }
     };
 
-    fetchTasks();
+    fetchData();
   }, []);
 
   /* FIND COLUMN */
@@ -183,6 +185,32 @@ export default function TaskBoard() {
     }
   };
 
+  /* ASSIGN USER */
+  const handleAssignUser = async (taskId, userId) => {
+    try {
+      await updateTask(taskId, { assignedTo: userId || null });
+
+      setColumns((prev) => {
+        const updated = { ...prev };
+
+        Object.keys(updated).forEach((col) => {
+          updated[col] = updated[col].map((task) =>
+            task._id === taskId
+              ? {
+                  ...task,
+                  assignedTo: users.find((u) => u._id === userId) || null,
+                }
+              : task,
+          );
+        });
+
+        return updated;
+      });
+    } catch (err) {
+      logError(err, { action: "ASSIGN_USER_FAILED" });
+    }
+  };
+
   if (loading) {
     return (
       <div className="max-w-7xl mx-auto px-4 md:px-6 py-6">
@@ -246,6 +274,8 @@ export default function TaskBoard() {
                 tasks={columns[col.id]}
                 activeTask={activeTask}
                 overColumn={overColumn}
+                users={users}
+                onAssignUser={handleAssignUser}
               />
             </SortableContext>
           ))}

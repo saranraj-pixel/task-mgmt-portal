@@ -12,8 +12,18 @@ import Profile from "./pages/Profile";
 
 import ProtectedRoute from "./routes/ProtectedRoute";
 import PublicRoute from "./routes/PublicRoute";
+import AdminProtectedRoute from "./routes/AdminProtectedRoute";
+import AdminRegisterRoute from "./routes/AdminRegisterRoute";
+
 import DashboardLayout from "./layouts/DashboardLayout";
+import AdminLayout from "./layouts/AdminLayout";
+
 import NotFound from "./pages/NotFound";
+import AdminLogin from "./pages/admin/AdminLogin";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminTasks from "./pages/admin/AdminTasks";
+import AdminInvite from "./pages/admin/AdminInvite";
+import AdminRegister from "./pages/admin/AdminRegister";
 
 function App() {
   return (
@@ -46,7 +56,33 @@ function App() {
           }
         />
 
-        {/* Protected Routes */}
+        {/* Admin Public */}
+        <Route path="/admin/login" element={<AdminLogin />} />
+
+        {/* Admin Register (TOKEN PROTECTED) */}
+        <Route
+          path="/admin/register"
+          element={
+            <AdminRegisterRoute>
+              <AdminRegister />
+            </AdminRegisterRoute>
+          }
+        />
+
+        {/* Admin Protected Routes */}
+        <Route
+          element={
+            <AdminProtectedRoute>
+              <AdminLayout />
+            </AdminProtectedRoute>
+          }
+        >
+          <Route path="/admin/dashboard" element={<AdminDashboard />} />
+          <Route path="/admin/tasks" element={<AdminTasks />} />
+          <Route path="/admin/invite-user" element={<AdminInvite />} />
+        </Route>
+
+        {/* User Protected Routes */}
         <Route
           element={
             <ProtectedRoute>
@@ -54,7 +90,6 @@ function App() {
             </ProtectedRoute>
           }
         >
-          {/* User Routes */}
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/tasks" element={<Tasks />} />
           <Route path="/board" element={<TaskBoard />} />

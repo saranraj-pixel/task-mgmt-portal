@@ -3,7 +3,7 @@ import { useAuth } from "../context/AuthContext";
 import Loader from "../components/Loader";
 
 const ProtectedRoute = ({ children }) => {
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, loading, user } = useAuth();
 
   if (loading) {
     return (
@@ -13,9 +13,14 @@ const ProtectedRoute = ({ children }) => {
     );
   }
 
-  // if user not logged in redirect to login
+  // Not logged in
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
+  }
+
+  // ❌ Block admin from user routes
+  if (user?.role === "admin") {
+    return <Navigate to="/admin/dashboard" replace />;
   }
 
   return children;

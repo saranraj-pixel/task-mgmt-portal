@@ -9,6 +9,8 @@ export default function KanbanColumn({
   tasks,
   activeTask,
   overColumn,
+  users,            
+  onAssignUser,     
 }) {
   const { setNodeRef, isOver } = useDroppable({
     id,
@@ -68,12 +70,17 @@ export default function KanbanColumn({
 
       {/* Tasks Area */}
       <div
-        className={`p-4 space-y-3 min-h-55 border border-gray-500 border-t-0 rounded-b-xl ${
+        className={`p-4 space-y-3 min-h-55 border border-gray-200 border-t-0 rounded-b-xl ${
           isActiveColumn ? "border-blue-600" : ""
         }`}
       >
         {tasks.map((task) => (
-          <TaskCard key={task._id} task={task} />
+          <TaskCard
+            key={task._id}
+            task={task}
+            users={users}                 
+            onAssignUser={onAssignUser}   
+          />
         ))}
 
         {/* Drag Drop Preview */}
