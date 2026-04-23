@@ -5,6 +5,7 @@ import { getUsers } from "../services/authService";
 import { FiEdit, FiTrash2, FiPlus } from "react-icons/fi";
 import TaskModal from "../components/TaskModal";
 import ConfirmDialog from "../components/ConfirmDialog";
+import TaskDetailsModal from "../components/TaskDetailsModal";
 import { toast } from "react-toastify";
 import { logError } from "../../utils/logger";
 import CustomDatePicker from "../components/CustomDatePicker";
@@ -30,8 +31,11 @@ const Tasks = () => {
 
   const [users, setUsers] = useState([]);
 
-  // In Tasks.jsx - add this state and fetch user info
-const [currentUser, setCurrentUser] = useState(null);
+  // State for Task Details Modal
+  const [selectedTaskForDetails, setSelectedTaskForDetails] = useState(null);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+
+  const [currentUser, setCurrentUser] = useState(null);
 
 useEffect(() => {
   // Get current user from localStorage or auth context
@@ -139,7 +143,8 @@ useEffect(() => {
   }, [fetchTasks]);
 
   // Delete
-  const handleDeleteClick = (id) => {
+  const handleDeleteClick = (id, event) => {
+    event.stopPropagation(); 
     setDeleteId(id);
     setConfirmOpen(true);
   };
@@ -164,9 +169,22 @@ useEffect(() => {
     setIsModalOpen(true);
   };
 
-  const openEditModal = (task) => {
+  const openEditModal = (task, event) => {
+    event.stopPropagation(); 
     setSelectedTask(task);
     setIsModalOpen(true);
+  };
+
+  // Handle row click to show details
+  const handleRowClick = (task) => {
+    setSelectedTaskForDetails(task);
+    setIsDetailsModalOpen(true);
+  };
+
+  // Close details modal
+  const closeDetailsModal = () => {
+    setIsDetailsModalOpen(false);
+    setSelectedTaskForDetails(null);
   };
 
   // Clear filters
@@ -210,7 +228,6 @@ useEffect(() => {
     return value.replace("-", " ").replace(/\b\w/g, (c) => c.toUpperCase());
   };
 
-  // Add this helper function
   const getTaskBadges = (task) => {
     const badges = [];
 
@@ -243,7 +260,6 @@ useEffect(() => {
         
     <div className="p-4 md:p-6">
       {/* HEADER */}
-
       <div className="flex flex-col [@media(min-width:350px)]:flex-row [@media(min-width:350px)]:justify-between [@media(min-width:350px)]:items-center gap-4 mb-6">
         {initialLoading ? (
           <>
@@ -268,7 +284,6 @@ useEffect(() => {
       </div>
 
       {/* FILTER BAR */}
-
       <div className="bg-white border border-gray-400 rounded-xl p-4 mb-6 shadow-sm">
         {initialLoading ? (
           <div className="flex flex-col lg:flex-row lg:items-center gap-4">
@@ -284,7 +299,6 @@ useEffect(() => {
         ) : (
           <div className="flex flex-col lg:flex-row lg:items-center gap-4">
             {/* SEARCH */}
-
             <div className="relative flex-1">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
                 🔍
@@ -295,12 +309,11 @@ useEffect(() => {
                 placeholder="Search tasks..."
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
-                className="w-full pl-9 pr-3 py-2  border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 px-3 "
+                className="w-full pl-9 pr-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 px-3"
               />
             </div>
 
             {/* FILTERS */}
-
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:flex lg:items-center gap-3 w-full lg:w-auto">
               <select
                 value={priority}
@@ -422,7 +435,8 @@ useEffect(() => {
                 tasks.map((task) => (
                   <tr
                     key={task._id}
-                    className={`border-b last:border-b-0 cursor-default hover:bg-gray-50 ${
+                    onClick={() => handleRowClick(task)}
+                    className={`border-b last:border-b-0 cursor-pointer hover:bg-gray-50 ${
                       task.isOverdue ? "bg-red-100" : ""
                     }`}
                   >
@@ -467,14 +481,14 @@ useEffect(() => {
 
                     <td className="p-4 flex gap-3 text-xl">
                       <button
-                        onClick={() => openEditModal(task)}
+                        onClick={(e) => openEditModal(task, e)}
                         className="text-blue-600 hover:text-blue-800 cursor-pointer"
                       >
                         <FiEdit />
                       </button>
 
                       <button
-                        onClick={() => handleDeleteClick(task._id)}
+                        onClick={(e) => handleDeleteClick(task._id, e)}
                         className="text-red-600 hover:text-red-800 cursor-pointer"
                       >
                         <FiTrash2 />
@@ -521,7 +535,8 @@ useEffect(() => {
           tasks.map((task) => (
             <div
               key={task._id}
-              className={`border cursor-default rounded-xl p-4 ${
+                onClick={() => handleRowClick(task)}
+              className={`border cursor-pointer rounded-xl p-4 ${
                 task.isOverdue ? "bg-red-50" : "bg-white"
               }`}
             >
@@ -578,14 +593,14 @@ useEffect(() => {
                 {/* Actions */}
                 <div className="flex gap-4 text-xl">
                   <button
-                    onClick={() => openEditModal(task)}
+                    onClick={(e) => openEditModal(task, e)}
                     className="text-blue-600 hover:text-blue-800 cursor-pointer"
                   >
                     <FiEdit size={24} />
                   </button>
 
                   <button
-                    onClick={() => handleDeleteClick(task._id)}
+                    onClick={(e) => handleDeleteClick(task._id, e)}
                     className="text-red-600 hover:text-red-800 cursor-pointer"
                   >
                     <FiTrash2 size={24} />
@@ -598,7 +613,6 @@ useEffect(() => {
       </div>
 
       {/* PAGINATION */}
-
       <div className="flex justify-between items-center mt-6">
         <button
           onClick={() => updateParams({ page: Math.max(page - 1, 1) })}
@@ -621,13 +635,14 @@ useEffect(() => {
         </button>
       </div>
 
+      {/* Modals */}
       <TaskModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         task={selectedTask}
         onSave={fetchTasks}
         users={users}
-        currentUser={currentUser}  // ← Add this line
+        currentUser={currentUser}
       />
 
       <ConfirmDialog
@@ -635,6 +650,13 @@ useEffect(() => {
         message="Are you sure you want to delete this task?"
         onConfirm={handleConfirmDelete}
         onCancel={() => setConfirmOpen(false)}
+      />
+
+      <TaskDetailsModal
+        isOpen={isDetailsModalOpen}
+        onClose={closeDetailsModal}
+        task={selectedTaskForDetails}
+        users={users}
       />
     </div>
   </>

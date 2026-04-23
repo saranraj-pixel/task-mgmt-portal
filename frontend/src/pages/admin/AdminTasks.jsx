@@ -2,9 +2,10 @@ import { useEffect, useState } from "react";
 import { getTasks, updateTask, deleteTask } from "../../services/taskService";
 import { getUsers } from "../../services/authService";
 import TaskModal from "../../components/TaskModal";
+import TaskDetailsModal from "../../components/TaskDetailsModal";
 import Skeleton from "../../components/Skeleton";
 import ConfirmDialog from "../../components/ConfirmDialog"; 
-import { FiPlus, FiUser, FiUserCheck, FiUserPlus, FiTrash2 } from "react-icons/fi";
+import { FiPlus, FiUser, FiUserCheck, FiUserPlus, FiTrash2, FiEye } from "react-icons/fi";
 import { logError } from "../../../utils/logger";
 import { toast } from "react-toastify";
 
@@ -14,10 +15,14 @@ const AdminTasks = () => {
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [deletingTaskId, setDeletingTaskId] = useState(null);
-  const [taskToDelete, setTaskToDelete] = useState(null); // Store task to delete
+  const [taskToDelete, setTaskToDelete] = useState(null);
 
   const [openModal, setOpenModal] = useState(false);
   const [selectedTask, setSelectedTask] = useState(null);
+
+  // State for Task Details Modal
+  const [selectedTaskForDetails, setSelectedTaskForDetails] = useState(null);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
 
   const [filter, setFilter] = useState("all");
   const [priorityFilter, setPriorityFilter] = useState("all");
@@ -71,6 +76,22 @@ const AdminTasks = () => {
       console.error('Error getting current user:', error);
     }
     return null;
+  };
+
+  // Handle row click to show details
+  const handleTaskClick = (task, event) => {
+    // Prevent opening details modal when clicking on buttons or selects
+    if (event.target.closest('button') || event.target.closest('select')) {
+      return;
+    }
+    setSelectedTaskForDetails(task);
+    setIsDetailsModalOpen(true);
+  };
+
+  // Close details modal
+  const closeDetailsModal = () => {
+    setIsDetailsModalOpen(false);
+    setSelectedTaskForDetails(null);
   };
 
   // Helper function to safely get user ID
@@ -127,7 +148,8 @@ const AdminTasks = () => {
   };
 
   /* ASSIGN USER */
-  const handleAssign = async (taskId, userId) => {
+  const handleAssign = async (taskId, userId, event) => {
+    if (event) event.stopPropagation(); 
     try {
       await updateTask(taskId, {
         assignedTo: userId || null,
@@ -291,6 +313,13 @@ const AdminTasks = () => {
         onCancel={() => setTaskToDelete(null)}
       />
 
+      {/* TASK DETAILS MODAL */}
+      <TaskDetailsModal
+        isOpen={isDetailsModalOpen}
+        onClose={closeDetailsModal}
+        task={selectedTaskForDetails}
+      />
+
       {/* HEADER */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
         <div className="flex-1">
@@ -407,7 +436,10 @@ const AdminTasks = () => {
             return (
               <div
                 key={task._id}
-                className="bg-white border rounded-xl p-4 shadow-sm hover:shadow-md transition relative"
+                onClick={(e) => handleTaskClick(task, e)}
+                className={`bg-white border rounded-xl p-4 shadow-sm hover:shadow-md transition relative cursor-pointer ${
+                  task.isOverdue ? "bg-red-300 border-red-400" : ""
+                }`}
               >
                 {/* Loading overlay while deleting */}
                 {isDeleting && (
@@ -437,9 +469,15 @@ const AdminTasks = () => {
                 <div className="flex flex-col lg:flex-row lg:items-start gap-4">
                   {/* LEFT SECTION - Title and metadata */}
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-gray-800 text-sm sm:text-base wrap-break-words">
-                      {task.title}
-                    </h3>
+                    <div className="flex items-start justify-between gap-2">
+                      <h3 className="font-semibold text-gray-800 text-sm sm:text-base wrap-break-words flex-1">
+                        {task.title}
+                      </h3>
+                      {/* View details indicator */}
+                      {/* <div className="text-gray-400 hover:text-blue-500 transition-colors">
+                        <FiEye size={18} className="cursor-pointer" />
+                      </div> */}
+                    </div>
                     
                     <div className="mt-2 space-y-1">
                       <p className="text-xs text-gray-600 flex items-center gap-1 flex-wrap">
@@ -465,10 +503,17 @@ const AdminTasks = () => {
                           }
                         </p>
                       )}
+                      
+                      {/* Description preview */}
+                      {task.description && (
+                        <p className="text-xs text-gray-500 mt-1 line-clamp-1">
+                          {task.description.length > 100 ? task.description.substring(0, 100) + '...' : task.description}
+                        </p>
+                      )}
                     </div>
                   </div>
 
-                  {/* STATUS */}
+                  {/* STATUS AND PRIORITY */}
                   <div className="flex flex-row lg:flex-col gap-3 lg:items-end">
                   <div>
                     <span className={`inline-block text-xs sm:text-sm px-3 py-1 rounded-full font-medium whitespace-nowrap ${getStatusStyle(task.status)}`}>
@@ -476,28 +521,28 @@ const AdminTasks = () => {
                     </span>
                   </div>
 
-                  {/* PRIORITY */}
-                  <div>
-                    <span className={`inline-block text-xs sm:text-sm px-3 py-1 rounded-full font-medium whitespace-nowrap ${getPriorityStyle(task.priority || "low")}`}>
-                      {formatPriority(task.priority || "low")}
-                    </span>
-                    {task.deadline && (
-                      <p className="text-xs text-gray-500 mt-1 whitespace-nowrap">
-                        📅 {new Date(task.deadline).toLocaleDateString()}
-                      </p>
-                    )}
+                    <div>
+                      <span className={`inline-block text-xs sm:text-sm px-3 py-1 rounded-full font-medium whitespace-nowrap ${getPriorityStyle(task.priority || "low")}`}>
+                        {formatPriority(task.priority || "low")}
+                      </span>
+                      {task.deadline && (
+                        <p className={`text-xs mt-1 whitespace-nowrap ${task.isOverdue ? 'text-red-600 font-medium' : 'text-gray-500'}`}>
+                          📅 {new Date(task.deadline).toLocaleDateString()}
+                          {task.isOverdue && " (Overdue)"}
+                        </p>
+                      )}
                     </div>
                   </div>
 
                   {/* ACTIONS */}
                   <div className="flex flex-col sm:flex-row lg:flex-col gap-2 sm:items-center lg:items-stretch">
                     {/* ASSIGN DROPDOWN */}
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                       <FiUser className="text-gray-400 shrink-0" />
                       <select
                         value={task.assignedTo?._id || ""}
-                        onChange={(e) => handleAssign(task._id, e.target.value)}
-                        className="border px-2 py-1.5 rounded-md text-sm flex-1 min-w-30 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        onChange={(e) => handleAssign(task._id, e.target.value, e)}
+                        className="border px-2 py-1.5 rounded-md text-sm flex-1 min-w-30 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
                         disabled={isDeleting}
                       >
                         <option value="">Unassigned</option>
@@ -510,13 +555,13 @@ const AdminTasks = () => {
                     </div>
 
                     {/* ACTION BUTTONS */}
-                    <div className="flex gap-3 justify-end sm:justify-start lg:justify-end">
+                    <div className="flex gap-3 justify-end sm:justify-start lg:justify-end" onClick={(e) => e.stopPropagation()}>
                       <button
                         onClick={() => {
                           setSelectedTask(task);
                           setOpenModal(true);
                         }}
-                        className="text-blue-600 text-sm hover:underline py-1"
+                        className="text-blue-600 text-sm hover:underline py-1 cursor-pointer"
                         disabled={isDeleting}
                       >
                         Edit
@@ -525,7 +570,7 @@ const AdminTasks = () => {
                       {userCanDelete && (
                         <button
                           onClick={() => setTaskToDelete(task)}
-                          className="text-red-600 text-sm hover:underline flex items-center gap-1 py-1"
+                          className="text-red-600 text-sm hover:underline flex items-center gap-1 py-1 cursor-pointer"
                           disabled={isDeleting}
                         >
                           <FiTrash2 size={14} />
