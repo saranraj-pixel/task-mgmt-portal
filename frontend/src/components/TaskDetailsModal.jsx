@@ -66,25 +66,25 @@ const TaskDetailsModal = ({ isOpen, onClose, task }) => {
     );
   };
 
-  const getTaskBadges = () => {
-    const badges = [];
+  // const getTaskBadges = () => {
+  //   const badges = [];
 
-    if (task.relationship?.isCreatedByMe) {
-      badges.push({
-        text: "Created by me",
-        color: "bg-purple-100 text-purple-800 border-purple-200",
-      });
-    }
+  //   if (task.relationship?.isCreatedByMe) {
+  //     badges.push({
+  //       text: "Created by me",
+  //       color: "bg-purple-100 text-purple-800 border-purple-200",
+  //     });
+  //   }
 
-    if (task.relationship?.isAssignedToMe) {
-      badges.push({
-        text: "Assigned to me",
-        color: "bg-indigo-100 text-indigo-800 border-indigo-200",
-      });
-    }
+  //   if (task.relationship?.isAssignedToMe) {
+  //     badges.push({
+  //       text: "Assigned to me",
+  //       color: "bg-indigo-100 text-indigo-800 border-indigo-200",
+  //     });
+  //   }
 
-    return badges;
-  };
+  //   return badges;
+  // };
 
   // Helper function to get user display info from populated user object
   const getUserInfo = (user) => {
@@ -144,7 +144,7 @@ const TaskDetailsModal = ({ isOpen, onClose, task }) => {
             </div>
 
             {/* Badges */}
-            {getTaskBadges().length > 0 && (
+            {/* {getTaskBadges().length > 0 && (
               <div className="flex flex-wrap gap-2">
                 {getTaskBadges().map((badge, idx) => (
                   <span
@@ -155,7 +155,7 @@ const TaskDetailsModal = ({ isOpen, onClose, task }) => {
                   </span>
                 ))}
               </div>
-            )}
+            )} */}
 
             {/* Description */}
             {task.description && (
