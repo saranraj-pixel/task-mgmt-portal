@@ -1,23 +1,27 @@
 import { useEffect, useState } from "react";
-import { getTasks, updateTask } from "../../services/taskService";
+import { getTasks, updateTask, deleteTask } from "../../services/taskService";
 import { getUsers } from "../../services/authService";
 import TaskModal from "../../components/TaskModal";
 import Skeleton from "../../components/Skeleton";
-import { FiPlus, FiUser, FiUserCheck, FiUserPlus } from "react-icons/fi";
+import ConfirmDialog from "../../components/ConfirmDialog"; 
+import { FiPlus, FiUser, FiUserCheck, FiUserPlus, FiTrash2 } from "react-icons/fi";
 import { logError } from "../../../utils/logger";
+import { toast } from "react-toastify";
 
-const AdminTasks = () => {
+const AdminTasks = () => { 
   const [tasks, setTasks] = useState([]);
   const [users, setUsers] = useState([]);
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [deletingTaskId, setDeletingTaskId] = useState(null);
+  const [taskToDelete, setTaskToDelete] = useState(null); // Store task to delete
 
   const [openModal, setOpenModal] = useState(false);
   const [selectedTask, setSelectedTask] = useState(null);
 
   const [filter, setFilter] = useState("all");
   const [priorityFilter, setPriorityFilter] = useState("all");
-  const [relationshipFilter, setRelationshipFilter] = useState("all"); // New filter
+  const [relationshipFilter, setRelationshipFilter] = useState("all");
 
   /* LOAD DATA & CURRENT USER */
   useEffect(() => {
@@ -38,6 +42,7 @@ const AdminTasks = () => {
         setCurrentUser(currentUserData);
       } catch (err) {
         logError(err, { action: "ADMIN_TASKS_LOAD_FAILED" });
+        toast.error("Failed to load tasks");
       } finally {
         setLoading(false);
       }
@@ -74,6 +79,53 @@ const AdminTasks = () => {
     return user._id?.toString() || user.toString();
   };
 
+  /* DELETE TASK FUNCTION */
+  const handleDeleteTask = async () => {
+    if (!taskToDelete) return;
+    
+    try {
+      setDeletingTaskId(taskToDelete._id);
+      
+      await deleteTask(taskToDelete._id);
+      
+      // Remove task from state
+      setTasks(prevTasks => prevTasks.filter(task => task._id !== taskToDelete._id));
+      
+      // Show success toast
+      toast.success(`Task "${taskToDelete.title}" deleted successfully`);
+      
+      // Close confirmation dialog
+      setTaskToDelete(null);
+      
+    } catch (err) {
+      logError(err, { action: "DELETE_TASK_FAILED", taskId: taskToDelete._id });
+      
+      // Handle different error responses with toast messages
+      if (err.response?.status === 403) {
+        toast.error("You don't have permission to delete this task");
+      } else if (err.response?.status === 404) {
+        toast.error("Task not found");
+        // Refresh tasks if task doesn't exist
+        refreshTasks();
+      } else {
+        toast.error(err.response?.data?.message || "Failed to delete task. Please try again.");
+      }
+    } finally {
+      setDeletingTaskId(null);
+    }
+  };
+
+  // Refresh tasks function
+  const refreshTasks = async () => {
+    try {
+      const taskRes = await getTasks({ page: 1, limit: 1000 });
+      setTasks(taskRes?.tasks || []);
+    } catch (err) {
+      logError(err, { action: "REFRESH_TASKS_FAILED" });
+      toast.error("Failed to refresh tasks");
+    }
+  };
+
   /* ASSIGN USER */
   const handleAssign = async (taskId, userId) => {
     try {
@@ -91,8 +143,11 @@ const AdminTasks = () => {
             : t,
         ),
       );
+      
+      toast.success("Task assigned successfully");
     } catch (err) {
       logError(err, { action: "ASSIGN_USER_FAILED" });
+      toast.error("Failed to assign task");
     }
   };
 
@@ -165,6 +220,21 @@ const AdminTasks = () => {
     }
   };
 
+  // Check if user can delete task
+  const canDeleteTask = (task) => {
+    if (!currentUser) return false;
+    
+    const userRole = currentUser.role;
+    const createdById = getUserId(task.createdBy);
+    const currentUserIdStr = currentUser._id?.toString() || currentUser.id?.toString();
+    
+    // Admin can delete all tasks
+    if (userRole === "admin") return true;
+    
+    // Regular users can only delete their own tasks
+    return createdById === currentUserIdStr;
+  };
+
   /* FILTERS */
   const filteredTasks = tasks.filter((t) => {
     const statusMatch = filter === "all" || t.status === filter;
@@ -213,38 +283,48 @@ const AdminTasks = () => {
 
   return (
     <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      {/* CONFIRM DIALOG FOR DELETE */}
+      <ConfirmDialog
+        isOpen={!!taskToDelete}
+        message={`Are you sure you want to delete task "${taskToDelete?.title}"? This action cannot be undone.`}
+        onConfirm={handleDeleteTask}
+        onCancel={() => setTaskToDelete(null)}
+      />
+
       {/* HEADER */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-        <div>
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
+        <div className="flex-1">
           <h1 className="text-xl sm:text-2xl font-bold text-gray-800">
             Admin Task Manager
           </h1>
           
-          <p className="text-sm text-gray-500 mt-1">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-4 mt-1">
+          <p className="text-sm text-gray-500">
             Total Tasks: <span className="font-semibold text-gray-700">{totalTasks}</span> | 
             Showing: <span className="font-semibold text-blue-600">{filteredCount}</span>
           </p>
 
-          {/* STATUS COUNTS */}
-          <div className="flex flex-wrap gap-3 mt-2 text-xs sm:text-sm">
-            <span className="px-3 py-1 rounded-full bg-gray-200 text-gray-700">
+          {/* STATUS COUNTS - Scrollable on mobile */}
+          <div className="flex flex-wrap gap-2 text-xs">
+            <span className="px-2 sm:px-3 py-1 rounded-full bg-gray-200 text-gray-700 whitespace-nowrap">
               Todo: {statusCounts.todo}
             </span>
-            <span className="px-3 py-1 rounded-full bg-amber-200 text-amber-700">
+            <span className="px-2 sm:px-3 py-1 rounded-full bg-amber-200 text-amber-700 whitespace-nowrap">
               In Progress: {statusCounts.inProgress}
             </span>
-            <span className="px-3 py-1 rounded-full bg-green-300 text-green-700">
+            <span className="px-2 sm:px-3 py-1 rounded-full bg-green-300 text-green-700 whitespace-nowrap">
               Done: {statusCounts.done}
             </span>
+            </div>
           </div>
 
           {/* RELATIONSHIP SUMMARY (for admin) */}
           {currentUser && (
-            <div className="flex flex-wrap gap-3 mt-2 text-xs">
-              <span className="px-2 py-0.5 rounded-full bg-purple-100 text-purple-700">
+            <div className="flex flex-wrap gap-2 mt-2 text-xs">
+              <span className="px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 whitespace-nowrap">
                 ✨ Created by me: {relationshipSummary.createdByMe}
               </span>
-              <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">
+              <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 whitespace-nowrap">
                 📋 Assigned to me: {relationshipSummary.assignedToMe}
               </span>
             </div>
@@ -256,24 +336,24 @@ const AdminTasks = () => {
             setSelectedTask(null);
             setOpenModal(true);
           }}
-          className="flex cursor-pointer items-center justify-center gap-2 bg-blue-600 text-white px-4 py-2.5 rounded-lg hover:bg-blue-700 w-full sm:w-auto"
+          className="flex cursor-pointer items-center justify-center gap-2 bg-blue-600 text-white px-4 py-2.5 rounded-lg hover:bg-blue-700 transition-colors w-full sm:w-auto"
         >
-          <FiPlus />
-          Create Task
+          <FiPlus className="text-sm sm:text-base" />
+          <span>Create Task</span>
         </button>
       </div>
 
       {/* FILTER SECTION */}
       <div className="bg-white border rounded-xl p-4 mb-6 shadow-sm">
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-3">
           <h2 className="text-sm font-semibold text-gray-700">Filter Tasks</h2>
           
-          <div className="flex flex-col sm:flex-row gap-3 w-full">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {/* STATUS DROPDOWN */}
             <select
               value={filter}
               onChange={(e) => setFilter(e.target.value)}
-              className="border px-3 py-2 rounded-lg text-sm bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 flex-1"
+              className="border px-3 py-2 rounded-lg text-sm bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="all">All Status</option>
               <option value="todo">Todo</option>
@@ -285,7 +365,7 @@ const AdminTasks = () => {
             <select
               value={priorityFilter}
               onChange={(e) => setPriorityFilter(e.target.value)}
-              className="border px-3 py-2 rounded-lg text-sm bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-500 flex-1"
+              className="border px-3 py-2 rounded-lg text-sm bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-500"
             >
               <option value="all">All Priority</option>
               <option value="low">Low</option>
@@ -297,7 +377,7 @@ const AdminTasks = () => {
             <select
               value={relationshipFilter}
               onChange={(e) => setRelationshipFilter(e.target.value)}
-              className="border px-3 py-2 rounded-lg text-sm bg-gray-50 focus:outline-none focus:ring-2 focus:ring-green-500 flex-1"
+              className="border px-3 py-2 rounded-lg text-sm bg-gray-50 focus:outline-none focus:ring-2 focus:ring-green-500"
             >
               <option value="all">All Tasks</option>
               <option value="created_by_me">✨ Created by me</option>
@@ -315,95 +395,110 @@ const AdminTasks = () => {
             <Skeleton key={i} className="h-32 w-full rounded-xl" />
           ))
         ) : filteredTasks.length === 0 ? (
-          <p className="text-gray-500 text-center py-10">No tasks found</p>
+          <div className="text-center py-10">
+            <p className="text-gray-500">No tasks found</p>
+          </div>
         ) : (
           filteredTasks.map((task) => {
             const relationship = getTaskRelationship(task);
+            const userCanDelete = canDeleteTask(task);
+            const isDeleting = deletingTaskId === task._id;
             
             return (
               <div
                 key={task._id}
-                className="bg-white border rounded-xl p-4 shadow-sm hover:shadow-md transition"
+                className="bg-white border rounded-xl p-4 shadow-sm hover:shadow-md transition relative"
               >
+                {/* Loading overlay while deleting */}
+                {isDeleting && (
+                  <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center rounded-xl z-10">
+                    <div className="flex items-center gap-2">
+                      <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                      <span className="text-sm text-gray-600">Deleting...</span>
+                    </div>
+                  </div>
+                )}
+
                 {/* RELATIONSHIP BADGE - for admin to see their relation to task */}
                 {relationship && (
                   <div className="mb-3">
                     <span className={`text-xs px-2 py-1 rounded-full border inline-flex items-center gap-1 ${getRelationshipBadgeStyle(relationship.type)}`}>
-                      <span>{relationship.icon}</span>
-                      {relationship.text}
+                      <span className="text-sm">{relationship.icon}</span>
+                      <span className="hidden xs:inline">{relationship.text}</span>
+                      <span className="xs:hidden">
+                        {relationship.type === "both" ? "Created & Assigned" : 
+                         relationship.type === "assigned" ? "Assigned" : "Created"}
+                      </span>
                     </span>
                   </div>
                 )}
 
                 {/* GRID LAYOUT */}
-                <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-start">
-                  {/* TITLE & CREATED BY */}
-                  <div className="md:col-span-2">
-                    <h3 className="font-semibold text-gray-800 text-sm sm:text-base">
+                <div className="flex flex-col lg:flex-row lg:items-start gap-4">
+                  {/* LEFT SECTION - Title and metadata */}
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-semibold text-gray-800 text-sm sm:text-base wrap-break-words">
                       {task.title}
                     </h3>
+                    
                     <div className="mt-2 space-y-1">
-                      <p className="text-xs text-gray-600 flex items-center gap-1">
-                        <FiUserPlus size={12} />
-                        Created by: 
-                        <span className="font-medium">
+                      <p className="text-xs text-gray-600 flex items-center gap-1 flex-wrap">
+                        <FiUserPlus className="shrink-0" size={12} />
+                        <span>Created by:</span>
+                        <span className="font-medium truncate">
                           {task.createdBy?.name || "Unknown"}
-                          {getUserId(task.createdBy) === (currentUser?._id?.toString() || currentUser?.id?.toString()) && 
-                            <span className="text-purple-600 ml-1">(You)</span>
-                          }
                         </span>
+                        {getUserId(task.createdBy) === (currentUser?._id?.toString() || currentUser?.id?.toString()) && 
+                          <span className="text-purple-600 whitespace-nowrap">(You)</span>
+                        }
                       </p>
+                      
                       {task.assignedTo && (
-                        <p className="text-xs text-gray-600 flex items-center gap-1">
-                          <FiUserCheck size={12} />
-                          Assigned to: 
-                          <span className="font-medium">
+                        <p className="text-xs text-gray-600 flex items-center gap-1 flex-wrap">
+                          <FiUserCheck className="shrink-0" size={12} />
+                          <span>Assigned to:</span>
+                          <span className="font-medium truncate">
                             {task.assignedTo?.name || "Unassigned"}
-                            {getUserId(task.assignedTo) === (currentUser?._id?.toString() || currentUser?.id?.toString()) && 
-                              <span className="text-blue-600 ml-1">(You)</span>
-                            }
                           </span>
+                          {getUserId(task.assignedTo) === (currentUser?._id?.toString() || currentUser?.id?.toString()) && 
+                            <span className="text-blue-600 whitespace-nowrap">(You)</span>
+                          }
                         </p>
                       )}
                     </div>
                   </div>
 
                   {/* STATUS */}
+                  <div className="flex flex-row lg:flex-col gap-3 lg:items-end">
                   <div>
-                    <span
-                      className={`inline-block text-xs sm:text-sm px-3 py-1 rounded-full font-medium ${getStatusStyle(
-                        task.status,
-                      )}`}
-                    >
+                    <span className={`inline-block text-xs sm:text-sm px-3 py-1 rounded-full font-medium whitespace-nowrap ${getStatusStyle(task.status)}`}>
                       {formatStatus(task.status)}
                     </span>
                   </div>
 
                   {/* PRIORITY */}
                   <div>
-                    <span
-                      className={`inline-block text-xs sm:text-sm px-3 py-1 rounded-full font-medium ${getPriorityStyle(
-                        task.priority,
-                      )}`}
-                    >
+                    <span className={`inline-block text-xs sm:text-sm px-3 py-1 rounded-full font-medium whitespace-nowrap ${getPriorityStyle(task.priority || "low")}`}>
                       {formatPriority(task.priority || "low")}
                     </span>
                     {task.deadline && (
-                      <p className="text-xs text-gray-500 mt-1">
+                      <p className="text-xs text-gray-500 mt-1 whitespace-nowrap">
                         📅 {new Date(task.deadline).toLocaleDateString()}
                       </p>
                     )}
+                    </div>
                   </div>
 
                   {/* ACTIONS */}
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:justify-end">
+                  <div className="flex flex-col sm:flex-row lg:flex-col gap-2 sm:items-center lg:items-stretch">
                     {/* ASSIGN DROPDOWN */}
-                    <div className="flex items-center gap-2 w-full sm:w-auto">
+                    <div className="flex items-center gap-2">
                       <FiUser className="text-gray-400 shrink-0" />
                       <select
                         value={task.assignedTo?._id || ""}
                         onChange={(e) => handleAssign(task._id, e.target.value)}
-                        className="border px-2 py-1.5 rounded-md text-sm w-full sm:w-auto focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        className="border px-2 py-1.5 rounded-md text-sm flex-1 min-w-30 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        disabled={isDeleting}
                       >
                         <option value="">Unassigned</option>
                         {users.map((u) => (
@@ -414,16 +509,30 @@ const AdminTasks = () => {
                       </select>
                     </div>
 
-                    {/* EDIT BUTTON */}
-                    <button
-                      onClick={() => {
-                        setSelectedTask(task);
-                        setOpenModal(true);
-                      }}
-                      className="text-blue-600 text-sm hover:underline text-left sm:text-right"
-                    >
-                      Edit
-                    </button>
+                    {/* ACTION BUTTONS */}
+                    <div className="flex gap-3 justify-end sm:justify-start lg:justify-end">
+                      <button
+                        onClick={() => {
+                          setSelectedTask(task);
+                          setOpenModal(true);
+                        }}
+                        className="text-blue-600 text-sm hover:underline py-1"
+                        disabled={isDeleting}
+                      >
+                        Edit
+                      </button>
+
+                      {userCanDelete && (
+                        <button
+                          onClick={() => setTaskToDelete(task)}
+                          className="text-red-600 text-sm hover:underline flex items-center gap-1 py-1"
+                          disabled={isDeleting}
+                        >
+                          <FiTrash2 size={14} />
+                          <span>Delete</span>
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -432,13 +541,14 @@ const AdminTasks = () => {
         )}
       </div>
 
-      {/* MODAL */}
+      {/* TASK MODAL */}
       <TaskModal
         isOpen={openModal}
         onClose={() => setOpenModal(false)}
         task={selectedTask}
         users={users}
-        onSave={() => window.location.reload()}
+        onSave={() => refreshTasks()}
+        currentUser={currentUser}
       />
     </div>
   );

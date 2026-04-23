@@ -106,7 +106,7 @@ const TaskModal = ({ isOpen, onClose, task, onSave, users = [], currentUser }) =
       logError(error, {
         action: isEdit ? "UPDATE_TASK" : "CREATE_TASK",
         payload: data,
-        taskId: task?._id || task?.id,
+        taskId: task?._id || task.id,
       });
     } finally {
       setIsLoading(false);
@@ -141,7 +141,7 @@ const TaskModal = ({ isOpen, onClose, task, onSave, users = [], currentUser }) =
             }`}>
               {isAdmin && "👑 Admin: You have full access to edit all fields"}
               {isCreator && "✏️ Creator: You have full access to edit all fields"}
-              {isAssignedOnly && "ℹ️ Assigned User: You can only update the status of this task"}
+              {isAssignedOnly && "ℹ️ Assigned: You can only update the status of this task"}
               {!isAdmin && !isCreator && !isAssignedOnly && isEdit && "👀 View Only: You cannot edit this task"}
             </p>
           </div>
@@ -178,7 +178,7 @@ const TaskModal = ({ isOpen, onClose, task, onSave, users = [], currentUser }) =
               {...register("description", {
                 required: "Description is required",
                 minLength: {
-                  value: 10,
+                  value: 5,
                   message: "Description must be at least 10 characters",
                 },
                 maxLength: {
@@ -253,7 +253,7 @@ const TaskModal = ({ isOpen, onClose, task, onSave, users = [], currentUser }) =
             </select>
           </div>
 
-          {/* DEADLINE */}
+          {/* DEADLINE - Completely disabled for assigned users */}
           <div>
             <label className="block font-medium text-sm mb-1">Deadline</label>
             <Controller
@@ -275,9 +275,28 @@ const TaskModal = ({ isOpen, onClose, task, onSave, users = [], currentUser }) =
                   value={field.value}
                   onChange={field.onChange}
                   placeholder="Select deadline"
-                  className={`w-full ${(isEdit && !canEditAllFields) ? "opacity-60" : ""}`}
+                  className={`w-full ${
+                    (isEdit && !canEditAllFields) 
+                      ? "bg-gray-100 cursor-not-allowed opacity-60 pointer-events-none" 
+                      : ""
+                  }`}
                   minDate={new Date()}
                   disabled={isEdit && !canEditAllFields}
+                  // Additional props to completely disable the date picker
+                  readOnly={isEdit && !canEditAllFields}
+                  onFocus={(e) => {
+                    if (isEdit && !canEditAllFields) {
+                      e.preventDefault();
+                      return false;
+                    }
+                  }}
+                  onClick={(e) => {
+                    if (isEdit && !canEditAllFields) {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      return false;
+                    }
+                  }}
                 />
               )}
             />

@@ -11,7 +11,6 @@ import CustomDatePicker from "../components/CustomDatePicker";
 import Skeleton from "../components/Skeleton";
 import { Helmet } from "react-helmet-async";
 
-
 const Tasks = () => {
   const [searchParams, setSearchParams] = useSearchParams();
  
@@ -38,7 +37,7 @@ useEffect(() => {
   // Get current user from localStorage or auth context
   const getUser = async () => {
     try {
-      const userStr = localStorage.getItem('user');
+      const userStr = localStorage.getItem("user");
       if (userStr) {
         setCurrentUser(JSON.parse(userStr));
       }
@@ -155,7 +154,7 @@ useEffect(() => {
 
       setConfirmOpen(false);
     } catch (error) {
-      toast.error("Failed to delete task", error);
+      toast.error("Failed to delete task you can only delete your own task", error);
     }
   };
 
@@ -211,6 +210,27 @@ useEffect(() => {
     return value.replace("-", " ").replace(/\b\w/g, (c) => c.toUpperCase());
   };
 
+  // Add this helper function
+  const getTaskBadges = (task) => {
+    const badges = [];
+
+    if (task.relationship?.isCreatedByMe) {
+      badges.push({
+        text: "Created by me",
+        color: "bg-purple-100 text-purple-800",
+      });
+    }
+
+    if (task.relationship?.isAssignedToMe) {
+      badges.push({
+        text: "Assigned to me",
+        color: "bg-indigo-100 text-indigo-800",
+      });
+    }
+
+    return badges;
+  };
+
   return (
     <>
      <Helmet>
@@ -246,7 +266,6 @@ useEffect(() => {
           </>
         )}
       </div>
-
 
       {/* FILTER BAR */}
 
@@ -336,9 +355,7 @@ useEffect(() => {
         )}
       </div>
 
-
       {/* DESKTOP TABLE */}
-
       <div className="hidden md:block bg-white border rounded-xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left">
@@ -355,6 +372,9 @@ useEffect(() => {
                 </th>
                 <th className="p-4 text-sm cursor-default font-semibold">
                   Deadline
+                </th>
+                  <th className="p-4 text-sm cursor-default font-semibold w-48">
+                    Relationship
                 </th>
                 <th className="p-4 text-sm cursor-default font-semibold">
                   Actions
@@ -378,6 +398,9 @@ useEffect(() => {
                     <td className="p-4">
                       <Skeleton className="h-5 w-24" />
                     </td>
+                      <td className="p-4">
+                        <Skeleton className="h-5 w-28" />
+                    </td>
                     <td className="p-4">
                       <div className="flex gap-3">
                         <Skeleton className="h-6 w-6" />
@@ -389,7 +412,7 @@ useEffect(() => {
               ) : tasks.length === 0 ? (
                 <tr>
                   <td
-                    colSpan="5"
+                    colSpan="6"
                     className="text-center py-12 text-gray-500 text-sm"
                   >
                     No tasks found
@@ -429,6 +452,19 @@ useEffect(() => {
                       {formatDate(task.deadline)}
                     </td>
 
+                      <td className="p-4">
+                        <div className="flex flex-wrap gap-2">
+                          {getTaskBadges(task).map((badge, idx) => (
+                            <span
+                              key={idx}
+                              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${badge.color}`}
+                            >
+                              {badge.text}
+                            </span>
+                          ))}
+                        </div>
+                    </td>
+
                     <td className="p-4 flex gap-3 text-xl">
                       <button
                         onClick={() => openEditModal(task)}
@@ -453,7 +489,6 @@ useEffect(() => {
       </div>
 
       {/* MOBILE CARDS */}
-
       <div className="md:hidden space-y-4">
         {loading ? (
           [...Array(3)].map((_, i) => (
@@ -519,7 +554,19 @@ useEffect(() => {
                 </div>
               </div>
 
-              {/* Deadline */}
+                {/* Badges for mobile */}
+                <div className="flex flex-wrap gap-2 mb-3">
+                  {getTaskBadges(task).map((badge, idx) => (
+                    <span
+                      key={idx}
+                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${badge.color}`}
+                    >
+                      {badge.text}
+                    </span>
+                  ))}
+                </div>
+
+              {/* Deadline and Actions */}
               <div className="flex items-center justify-between mt-3">
                 <p className="text-sm text-gray-600 flex gap-2">
                   <span className="font-semibold text-gray-500">Deadline:</span>
@@ -549,7 +596,6 @@ useEffect(() => {
           ))
         )}
       </div>
-
 
       {/* PAGINATION */}
 
