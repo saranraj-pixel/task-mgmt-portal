@@ -179,7 +179,7 @@ const TaskModal = ({ isOpen, onClose, task, onSave, users = [], currentUser }) =
                 required: "Description is required",
                 minLength: {
                   value: 5,
-                  message: "Description must be at least 10 characters",
+                  message: "Description must be at least 5 characters",
                 },
                 maxLength: {
                   value: 500,
