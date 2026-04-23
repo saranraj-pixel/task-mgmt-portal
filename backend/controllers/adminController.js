@@ -41,24 +41,41 @@ exports.getAdminDashboard = async (req, res) => {
     ]);
 
     /* -----------------------------
-       4. Users with Task Counts
+       4. Users with ALL Task Counts (Excluding Admin)
     ----------------------------- */
     const usersWithTasks = await User.aggregate([
       {
+        // filter out admin users
+        $match: {
+          role: { $ne: "admin" } // Exclude users with role 'admin'
+        }
+      },
+      {
         $lookup: {
           from: "tasks",
-          localField: "_id",
-          foreignField: "assignedTo",
-          as: "tasks",
+          let: { userId: "$_id" },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $or: [
+                    { $eq: ["$assignedTo", "$$userId"] },
+                    { $eq: ["$createdBy", "$$userId"] },
+                  ]
+                }
+              }
+            }
+          ],
+          as: "allUserTasks",
         },
       },
       {
         $addFields: {
-          totalTasks: { $size: "$tasks" },
+          totalTasks: { $size: "$allUserTasks" },
           completedTasks: {
             $size: {
               $filter: {
-                input: "$tasks",
+                input: "$allUserTasks",
                 as: "task",
                 cond: { $eq: ["$$task.status", "done"] },
               },
@@ -78,9 +95,9 @@ exports.getAdminDashboard = async (req, res) => {
     ]);
 
     /* -----------------------------
-       5. Recent Users
+       5. Recent Users (Excluding Admin)
     ----------------------------- */
-    const recentUsers = await User.find()
+    const recentUsers = await User.find({ role: { $ne: "admin" } })
       .sort({ createdAt: -1 })
       .limit(5)
       .select("-password");
