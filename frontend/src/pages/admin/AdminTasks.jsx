@@ -466,67 +466,68 @@ const AdminTasks = () => {
                 )}
 
                 {/* GRID LAYOUT */}
-                <div className="flex flex-col lg:flex-row lg:items-start gap-4">
-                  {/* LEFT SECTION - Title and metadata */}
-                  <div className="flex-1 min-w-0">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
+                  
+                  {/* LEFT SECTION - Title and metadata - spans 7 columns on large screens */}
+                  <div className="lg:col-span-7 min-w-0">
                     <div className="flex items-start justify-between gap-2">
                       <h3 className="font-semibold text-gray-800 text-sm sm:text-base wrap-break-words flex-1">
                         {task.title}
                       </h3>
                       {/* View details indicator */}
-                      {/* <div className="text-gray-400 hover:text-blue-500 transition-colors">
+                      <div className="text-gray-400 hover:text-blue-500 transition-colors shrink-0">
                         <FiEye size={18} className="cursor-pointer" />
-                      </div> */}
+                      </div>
                     </div>
                     
-                    <div className="mt-2 space-y-1">
-                      <p className="text-xs text-gray-600 flex items-center gap-1 flex-wrap">
+                    <div className="mt-2 space-y-1.5">
+                      <p className="text-xs text-gray-600 flex items-center gap-1.5 flex-wrap">
                         <FiUserPlus className="shrink-0" size={12} />
                         <span>Created by:</span>
-                        <span className="font-medium truncate">
+                        <span className="font-medium truncate max-w-37.5 sm:max-w-50">
                           {task.createdBy?.name || "Unknown"}
                         </span>
                         {getUserId(task.createdBy) === (currentUser?._id?.toString() || currentUser?.id?.toString()) && 
-                          <span className="text-purple-600 whitespace-nowrap">(You)</span>
+                          <span className="text-purple-600 whitespace-nowrap text-[11px] sm:text-xs">(You)</span>
                         }
                       </p>
                       
                       {task.assignedTo && (
-                        <p className="text-xs text-gray-600 flex items-center gap-1 flex-wrap">
+                        <p className="text-xs text-gray-600 flex items-center gap-1.5 flex-wrap">
                           <FiUserCheck className="shrink-0" size={12} />
                           <span>Assigned to:</span>
-                          <span className="font-medium truncate">
+                          <span className="font-medium truncate max-w-37.5 sm:max-w-50">
                             {task.assignedTo?.name || "Unassigned"}
                           </span>
                           {getUserId(task.assignedTo) === (currentUser?._id?.toString() || currentUser?.id?.toString()) && 
-                            <span className="text-blue-600 whitespace-nowrap">(You)</span>
+                            <span className="text-blue-600 whitespace-nowrap text-[11px] sm:text-xs">(You)</span>
                           }
                         </p>
                       )}
                       
                       {/* Description preview */}
                       {task.description && (
-                        <p className="text-xs text-gray-500 mt-1 line-clamp-1">
+                        <p className="text-xs text-gray-500 mt-1 line-clamp-2 sm:line-clamp-1">
                           {task.description.length > 100 ? task.description.substring(0, 100) + '...' : task.description}
                         </p>
                       )}
                     </div>
                   </div>
 
-                  {/* STATUS AND PRIORITY */}
-                  <div className="flex flex-row lg:flex-col gap-3 lg:items-end">
-                  <div>
-                    <span className={`inline-block text-xs sm:text-sm px-3 py-1 rounded-full font-medium whitespace-nowrap ${getStatusStyle(task.status)}`}>
+                  {/* STATUS AND PRIORITY - spans 2 columns on large screens */}
+                  <div className="lg:col-span-2 flex flex-row lg:flex-col gap-3 lg:gap-2">
+                  <div className="shrink-0">
+                    <span className={`inline-flex text-xs sm:text-sm px-3 py-1 rounded-full font-medium whitespace-nowrap ${getStatusStyle(task.status)}`}>
                       {formatStatus(task.status)}
                     </span>
                   </div>
 
-                    <div>
-                      <span className={`inline-block text-xs sm:text-sm px-3 py-1 rounded-full font-medium whitespace-nowrap ${getPriorityStyle(task.priority || "low")}`}>
+                    <div className="shrink-0">
+                      <span className={`inline-flex text-xs sm:text-sm px-3 py-1 rounded-full font-medium whitespace-nowrap ${getPriorityStyle(task.priority || "low")}`}>
                         {formatPriority(task.priority || "low")}
                       </span>
                       {task.deadline && (
-                        <p className={`text-xs mt-1 whitespace-nowrap ${task.isOverdue ? 'text-red-600 font-medium' : 'text-gray-500'}`}>
+                        <p className={`text-xs mt-1.5 whitespace-nowrap ${task.isOverdue ? 'text-red-600 font-medium' : 'text-gray-500'}`}>
                           📅 {new Date(task.deadline).toLocaleDateString()}
                           {task.isOverdue && " (Overdue)"}
                         </p>
@@ -534,15 +535,15 @@ const AdminTasks = () => {
                     </div>
                   </div>
 
-                  {/* ACTIONS */}
-                  <div className="flex flex-col sm:flex-row lg:flex-col gap-2 sm:items-center lg:items-stretch">
+                  {/* ACTIONS - spans 3 columns on large screens */}
+                  <div className="lg:col-span-3 flex flex-col sm:flex-row lg:flex-col gap-3">
                     {/* ASSIGN DROPDOWN */}
-                    <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                      <FiUser className="text-gray-400 shrink-0" />
+                    <div className="flex items-center gap-2 w-full" onClick={(e) => e.stopPropagation()}>
+                      <FiUser className="text-gray-400 shrink-0" size={14} />
                       <select
                         value={task.assignedTo?._id || ""}
                         onChange={(e) => handleAssign(task._id, e.target.value, e)}
-                        className="border px-2 py-1.5 rounded-md text-sm flex-1 min-w-30 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
+                        className="border border-gray-300 px-2 py-1.5 rounded-md text-xs sm:text-sm flex-1 min-w-30 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer hover:bg-gray-50 transition-colors"
                         disabled={isDeleting}
                       >
                         <option value="">Unassigned</option>
@@ -555,13 +556,13 @@ const AdminTasks = () => {
                     </div>
 
                     {/* ACTION BUTTONS */}
-                    <div className="flex gap-3 justify-end sm:justify-start lg:justify-end" onClick={(e) => e.stopPropagation()}>
+                    <div className="flex gap-4 justify-start lg:justify-end items-center" onClick={(e) => e.stopPropagation()}>
                       <button
                         onClick={() => {
                           setSelectedTask(task);
                           setOpenModal(true);
                         }}
-                        className="text-blue-600 text-sm hover:underline py-1 cursor-pointer"
+                        className="text-blue-600 text-xs sm:text-sm hover:text-blue-800 hover:underline py-1 cursor-pointer transition-colors font-medium"
                         disabled={isDeleting}
                       >
                         Edit
@@ -570,7 +571,7 @@ const AdminTasks = () => {
                       {userCanDelete && (
                         <button
                           onClick={() => setTaskToDelete(task)}
-                          className="text-red-600 text-sm hover:underline flex items-center gap-1 py-1 cursor-pointer"
+                          className="text-red-600 text-xs sm:text-sm hover:text-red-800 hover:underline flex items-center gap-1 py-1 cursor-pointer transition-colors font-medium"
                           disabled={isDeleting}
                         >
                           <FiTrash2 size={14} />
