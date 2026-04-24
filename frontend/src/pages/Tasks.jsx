@@ -132,7 +132,7 @@ const Tasks = () => {
   const fetchTasks = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await getTasks({
+      const apiParams = {
         page,
         limit: 10,
         search,
@@ -140,15 +140,16 @@ const Tasks = () => {
         status,
         deadlineFrom,
         deadlineTo,
-      });
+      };
+      
+      // overdue filter to API call if not "all"
+      if (overdueFilter !== "all") {
+        apiParams.overdue = overdueFilter;
+      }
+      
+      const data = await getTasks(apiParams);
 
-      // Add overdue flag to each task
-      const tasksWithOverdue = data.tasks.map(task => ({
-        ...task,
-        isOverdue: new Date(task.deadline) < new Date() && task.status !== "done"
-      }));
-
-      setTasks(tasksWithOverdue);
+      setTasks(data.tasks);
       setTotalPages(data.totalPages);
       setTotalCount(data.totalCount);
     } catch (error) {
@@ -159,13 +160,14 @@ const Tasks = () => {
         priority,
         status,
         hasDeadlineFilter: !!(deadlineFrom || deadlineTo),
+        overdue: overdueFilter,
       });
       toast.error("Failed to fetch tasks");
     } finally {
       setLoading(false);
       setInitialLoading(false);
     }
-  }, [page, search, priority, status, deadlineFrom, deadlineTo]);
+  }, [page, search, priority, status, deadlineFrom, deadlineTo, overdueFilter]);
 
   useEffect(() => {
     fetchTasks();
@@ -186,42 +188,53 @@ const Tasks = () => {
     });
   }, [relationshipFilter]);
 
-  // Client-side filtering based on overdue status
-  const getFilteredByOverdue = useCallback((tasksList) => {
-    if (overdueFilter === "all") return tasksList;
-    
-    return tasksList.filter(task => {
-      if (overdueFilter === "overdue") {
-        return task.isOverdue === true;
-      }
-      if (overdueFilter === "notOverdue") {
-        return task.isOverdue === false;
-      }
-      return true;
-    });
-  }, [overdueFilter]);
-
-  // Apply all filters
   const getFilteredTasks = useCallback(() => {
     let filtered = tasks;
     
     // Apply relationship filter
     filtered = getFilteredByRelationship(filtered);
     
-    // Apply overdue filter
-    filtered = getFilteredByOverdue(filtered);
-    
     return filtered;
-  }, [tasks, getFilteredByRelationship, getFilteredByOverdue]);
+  }, [tasks, getFilteredByRelationship]);
 
   const displayedTasks = getFilteredTasks();
   const displayCount = displayedTasks.length;
 
-  // Check if client-side filters are active
-  const hasClientSideFilters = relationshipFilter !== "all" || overdueFilter !== "all";
+  // Check if relationship filter is active (client-side)
+  const hasClientSideFilters = relationshipFilter !== "all";
   
   // Check if any filter is active
   const hasAnyFilter = priority || status || deadlineFrom || deadlineTo || search || relationshipFilter !== "all" || overdueFilter !== "all";
+
+  // Get the appropriate count to display based on active filters
+  const getDisplayCountText = () => {
+    if (hasClientSideFilters) {
+      // When relationship filter is active, show filtered count from client-side
+      return `${displayCount} of ${totalCount}`;
+    } else if (overdueFilter !== "all") {
+      // When only overdue filter is active, show total count from API (server-side filtered)
+      return `${totalCount}`;
+    } else {
+      // No filters active
+      return `${totalCount}`;
+    }
+  };
+
+  // Get the subtitle text
+  const getSubtitleText = () => {
+    if (hasClientSideFilters && relationshipFilter !== "all") {
+      const relationshipText = relationshipFilter === "createdByMe" ? "Created by me" : "Assigned to me";
+      if (overdueFilter !== "all") {
+        const overdueText = overdueFilter === "overdue" ? "overdue" : "not overdue";
+        return `${relationshipText} • ${overdueText} tasks`;
+      }
+      return `${relationshipText} tasks`;
+    } else if (overdueFilter !== "all") {
+      const overdueText = overdueFilter === "overdue" ? "Overdue" : "Not overdue";
+      return `${overdueText} tasks`;
+    }
+    return "Total tasks";
+  };
 
   // Delete
   const handleDeleteClick = (id, event) => {
@@ -230,7 +243,7 @@ const Tasks = () => {
     setConfirmOpen(true);
   };
 
-  // Delete handler - Updated to show actual API errors
+  // Delete handler
   const handleConfirmDelete = async () => {
     try {
       await deleteTask(deleteId);
@@ -469,9 +482,14 @@ const Tasks = () => {
           </>
         ) : (
           <>
-            <h1 className="text-xl md:text-2xl cursor-default font-bold text-gray-800">
-              Tasks <span className="text-blue-500">({displayCount})</span>
-            </h1>
+            <div>
+              <h1 className="text-xl md:text-2xl cursor-default font-bold text-gray-800">
+                Tasks
+              </h1>
+              <p className="text-base text-gray-500 mt-1">
+                {getSubtitleText()}: <span className="font-semibold text-blue-600">{getDisplayCountText()}</span>
+              </p>
+            </div>
 
               <div className="flex gap-3">
                 {/* Mobile Filter Button */}
@@ -592,7 +610,7 @@ const Tasks = () => {
           <div className="mb-4 flex flex-wrap gap-2 items-center">
             <span className="text-sm text-gray-600 font-medium">Active filters:</span>
             {relationshipFilter !== "all" && (
-              <span className="inline-flex cursor-defautl items-center px-2 py-1 rounded-md text-xs font-medium bg-purple-100 text-purple-800">
+              <span className="inline-flex cursor-default items-center px-2 py-1 rounded-md text-xs font-medium bg-purple-100 text-purple-800">
                 {relationshipFilter === "createdByMe" ? "Created by me" : "Assigned to me"}
                 <button
                   onClick={() => updateParams({ relationship: "all", page: 1 })}
@@ -810,6 +828,7 @@ const Tasks = () => {
                     </span>
                   ))}
                 </div>
+              
               {/* Deadline and Actions */}
               <div className="flex items-center justify-between mt-3">
                 <p className="text-sm text-gray-600 flex gap-2">
@@ -833,8 +852,8 @@ const Tasks = () => {
         )}
       </div>
 
-      {/* PAGINATION - Hide when client-side filters are active */}
-        {!hasClientSideFilters && !loading && displayedTasks.length > 0 && (
+      {/* PAGINATION */}
+      {!loading && displayedTasks.length > 0 && totalPages > 1 && (
       <div className="flex justify-between items-center mt-6">
         <button
           onClick={() => updateParams({ page: Math.max(page - 1, 1) })}
@@ -853,13 +872,6 @@ const Tasks = () => {
         >
           Next
         </button>
-      </div>
-        )}
-        
-        {/* Show message when client-side filters are active */}
-        {hasClientSideFilters && !loading && displayedTasks.length > 0 && (
-          <div className="text-center text-sm text-gray-500 mt-6">
-            Showing {displayCount} of {totalCount} total tasks (filters applied)
           </div>
         )}
 
