@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { getTasks, deleteTask } from "../services/taskService";
 import { getUsers } from "../services/authService";
-import { FiEdit, FiTrash2, FiPlus } from "react-icons/fi";
+import { FiEdit, FiTrash2, FiPlus, FiFilter, FiX } from "react-icons/fi";
 import TaskModal from "../components/TaskModal";
 import ConfirmDialog from "../components/ConfirmDialog";
 import TaskDetailsModal from "../components/TaskDetailsModal";
@@ -37,20 +37,29 @@ const Tasks = () => {
 
   const [currentUser, setCurrentUser] = useState(null);
 
-useEffect(() => {
-  // Get current user from localStorage or auth context
-  const getUser = async () => {
-    try {
-      const userStr = localStorage.getItem("user");
-      if (userStr) {
-        setCurrentUser(JSON.parse(userStr));
+  // Relationship filter state
+  const [relationshipFilter, setRelationshipFilter] = useState("all");
+  
+  // Overdue filter state
+  const [overdueFilter, setOverdueFilter] = useState("all");
+
+  // Mobile filter drawer state
+  const [isFilterDrawerOpen, setIsFilterDrawerOpen] = useState(false);
+
+  useEffect(() => {
+    // Get current user from localStorage or auth context
+    const getUser = async () => {
+      try {
+        const userStr = localStorage.getItem("user");
+        if (userStr) {
+          setCurrentUser(JSON.parse(userStr));
+        }
+      } catch (err) {
+        console.error("Error loading user:", err);
       }
-    } catch (err) {
-      console.error("Error loading user:", err);
-    }
-  };
-  getUser();
-}, []);
+    };
+    getUser();
+  }, []);
 
   // Read values from URL
   const page = Number(searchParams.get("page")) || 1;
@@ -59,6 +68,18 @@ useEffect(() => {
   const status = searchParams.get("status") || "";
   const deadlineFrom = searchParams.get("deadlineFrom") || "";
   const deadlineTo = searchParams.get("deadlineTo") || "";
+  const urlRelationship = searchParams.get("relationship") || "all";
+  const urlOverdue = searchParams.get("overdue") || "all";
+
+  // Sync relationship filter with URL
+  useEffect(() => {
+    setRelationshipFilter(urlRelationship);
+  }, [urlRelationship]);
+
+  // Sync overdue filter with URL
+  useEffect(() => {
+    setOverdueFilter(urlOverdue);
+  }, [urlOverdue]);
 
   // Sync search input with URL
   useEffect(() => {
@@ -66,17 +87,17 @@ useEffect(() => {
   }, [search]);
 
   useEffect(() => {
-  const fetchUsers = async () => {
-    try {
-      const res = await getUsers();
-      setUsers(res?.users || []);
-    } catch (err) {
-      logError(err, { action: "FETCH_USERS_FAILED" });
-    }
-  };
+    const fetchUsers = async () => {
+      try {
+        const res = await getUsers();
+        setUsers(res?.users || []);
+      } catch (err) {
+        logError(err, { action: "FETCH_USERS_FAILED" });
+      }
+    };
 
-  fetchUsers();
-}, []);
+    fetchUsers();
+  }, []);
 
   // Update URL params
   const updateParams = useCallback(
@@ -84,7 +105,7 @@ useEffect(() => {
       const params = Object.fromEntries([...searchParams]);
 
       Object.entries(updates).forEach(([key, value]) => {
-        if (!value) {
+        if (!value || value === "all") {
           delete params[key];
         } else {
           params[key] = value;
@@ -109,6 +130,7 @@ useEffect(() => {
 
   // Fetch tasks
   const fetchTasks = useCallback(async () => {
+    setLoading(true);
     try {
       const data = await getTasks({
         page,
@@ -120,7 +142,13 @@ useEffect(() => {
         deadlineTo,
       });
 
-      setTasks(data.tasks);
+      // Add overdue flag to each task
+      const tasksWithOverdue = data.tasks.map(task => ({
+        ...task,
+        isOverdue: new Date(task.deadline) < new Date() && task.status !== "done"
+      }));
+
+      setTasks(tasksWithOverdue);
       setTotalPages(data.totalPages);
       setTotalCount(data.totalCount);
     } catch (error) {
@@ -132,6 +160,7 @@ useEffect(() => {
         status,
         hasDeadlineFilter: !!(deadlineFrom || deadlineTo),
       });
+      toast.error("Failed to fetch tasks");
     } finally {
       setLoading(false);
       setInitialLoading(false);
@@ -141,6 +170,58 @@ useEffect(() => {
   useEffect(() => {
     fetchTasks();
   }, [fetchTasks]);
+
+  // Client-side filtering based on relationship
+  const getFilteredByRelationship = useCallback((tasksList) => {
+    if (relationshipFilter === "all") return tasksList;
+    
+    return tasksList.filter(task => {
+      if (relationshipFilter === "createdByMe") {
+        return task.relationship?.isCreatedByMe;
+      }
+      if (relationshipFilter === "assignedToMe") {
+        return task.relationship?.isAssignedToMe;
+      }
+      return true;
+    });
+  }, [relationshipFilter]);
+
+  // Client-side filtering based on overdue status
+  const getFilteredByOverdue = useCallback((tasksList) => {
+    if (overdueFilter === "all") return tasksList;
+    
+    return tasksList.filter(task => {
+      if (overdueFilter === "overdue") {
+        return task.isOverdue === true;
+      }
+      if (overdueFilter === "notOverdue") {
+        return task.isOverdue === false;
+      }
+      return true;
+    });
+  }, [overdueFilter]);
+
+  // Apply all filters
+  const getFilteredTasks = useCallback(() => {
+    let filtered = tasks;
+    
+    // Apply relationship filter
+    filtered = getFilteredByRelationship(filtered);
+    
+    // Apply overdue filter
+    filtered = getFilteredByOverdue(filtered);
+    
+    return filtered;
+  }, [tasks, getFilteredByRelationship, getFilteredByOverdue]);
+
+  const displayedTasks = getFilteredTasks();
+  const displayCount = displayedTasks.length;
+
+  // Check if client-side filters are active
+  const hasClientSideFilters = relationshipFilter !== "all" || overdueFilter !== "all";
+  
+  // Check if any filter is active
+  const hasAnyFilter = priority || status || deadlineFrom || deadlineTo || search || relationshipFilter !== "all" || overdueFilter !== "all";
 
   // Delete
   const handleDeleteClick = (id, event) => {
@@ -152,14 +233,11 @@ useEffect(() => {
   const handleConfirmDelete = async () => {
     try {
       await deleteTask(deleteId);
-
       setTasks((prev) => prev.filter((t) => t._id !== deleteId));
-
       toast.success("Task deleted successfully");
-
       setConfirmOpen(false);
     } catch (error) {
-      toast.error("Failed to delete task you can only delete your own task", error);
+      toast.error("Failed to delete task. You can only delete your own task.",error);
     }
   };
 
@@ -187,10 +265,11 @@ useEffect(() => {
     setSelectedTaskForDetails(null);
   };
 
-  // Clear filters
+  // Clear all filters
   const clearFilters = () => {
     setSearchInput("");
     setSearchParams({});
+    setIsFilterDrawerOpen(false);
   };
 
   const priorityColor = (priority) => {
@@ -220,6 +299,7 @@ useEffect(() => {
   };
 
   const formatDate = (date) => {
+    if (!date) return "No date";
     return new Date(date).toLocaleDateString("en-GB");
   };
 
@@ -245,128 +325,315 @@ useEffect(() => {
       });
     }
 
+    if (task.isOverdue) {
+      badges.push({
+        text: "Overdue",
+        color: "bg-red-100 text-red-800",
+      });
+    }
+
     return badges;
   };
 
+  // Filter components for reuse
+  const FilterControls = ({ isMobile = false }) => (
+    <div className={isMobile ? "space-y-4" : "grid grid-cols-1 sm:grid-cols-2 lg:flex lg:items-center gap-3 w-full lg:w-auto"}>
+      <select
+        value={priority}
+        onChange={(e) => updateParams({ priority: e.target.value, page: 1 })}
+        className="border cursor-pointer rounded-lg px-3 py-2.5 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+      >
+        <option value="">All Priorities</option>
+        <option value="low">Low</option>
+        <option value="medium">Medium</option>
+        <option value="high">High</option>
+      </select>
+
+      <select
+        value={status}
+        onChange={(e) => updateParams({ status: e.target.value, page: 1 })}
+        className="border cursor-pointer rounded-lg px-3 py-2.5 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+      >
+        <option value="">All Statuses</option>
+        <option value="todo">Todo</option>
+        <option value="in-progress">In Progress</option>
+        <option value="done">Done</option>
+      </select>
+
+      <select
+        value={relationshipFilter}
+        onChange={(e) => updateParams({ relationship: e.target.value, page: 1 })}
+        className="border cursor-pointer rounded-lg px-3 py-2.5 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+      >
+        <option value="all">All Tasks</option>
+        <option value="createdByMe">Created by Me</option>
+        <option value="assignedToMe">Assigned to Me</option>
+      </select>
+
+      <select
+        value={overdueFilter}
+        onChange={(e) => updateParams({ overdue: e.target.value, page: 1 })}
+        className="border cursor-pointer rounded-lg px-3 py-2.5 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+      >
+        <option value="all">All Deadlines</option>
+        <option value="overdue">Overdue Only</option>
+        <option value="notOverdue">Not Overdue</option>
+      </select>
+
+      <div className="w-full">
+        <CustomDatePicker
+          value={deadlineFrom}
+          onChange={(val) => updateParams({ deadlineFrom: val, page: 1 })}
+          placeholder="From date"
+        />
+      </div>
+
+      <div className="w-full">
+        <CustomDatePicker
+          value={deadlineTo}
+          onChange={(val) => updateParams({ deadlineTo: val, page: 1 })}
+          placeholder="To date"
+        />
+      </div>
+
+      {isMobile && (
+        <div className="flex gap-3 pt-2">
+          <button
+            onClick={clearFilters}
+            className="flex-1 cursor-pointer px-4 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-medium"
+          >
+            Clear All
+          </button>
+          <button
+            onClick={() => setIsFilterDrawerOpen(false)}
+            className="flex-1 cursor-pointer px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium"
+          >
+            Apply Filters
+          </button>
+        </div>
+      )}
+    </div>
+  );
+
   return (
     <>
-     <Helmet>
+      <Helmet>
         <title> Tasks | Task Manager</title>
         <meta
           name="description"
-          content="Overview of your tasks and priority, status, deadline everything you can see as a list "
+          content="Overview of your tasks and priority, status, deadline everything you can see as a list"
         />
       </Helmet>
         
     <div className="p-4 md:p-6">
       {/* HEADER */}
-      <div className="flex flex-col [@media(min-width:350px)]:flex-row [@media(min-width:350px)]:justify-between [@media(min-width:350px)]:items-center gap-4 mb-6">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
         {initialLoading ? (
           <>
             <Skeleton className="h-8 w-40" />
-            <Skeleton className="h-10 w-full [@media(min-width:350px)]:w-32" />
+            <Skeleton className="h-10 w-full sm:w-32" />
           </>
         ) : (
           <>
             <h1 className="text-xl md:text-2xl cursor-default font-bold text-gray-800">
-              Tasks <span className="text-blue-500">({totalCount})</span>
+              Tasks <span className="text-blue-500">({displayCount})</span>
             </h1>
+
+              <div className="flex gap-3">
+                {/* Mobile Filter Button */}
+                <button
+                  onClick={() => setIsFilterDrawerOpen(true)}
+                  className="lg:hidden flex items-center gap-2 bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition"
+                >
+                  <FiFilter size={20} />
+                  <span>Filters</span>
+                  {hasAnyFilter && (
+                    <span className="ml-1 w-2 h-2 bg-blue-600 rounded-full"></span>
+                  )}
+                </button>
 
             <button
               onClick={openCreateModal}
-              className="flex items-center font-bold justify-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition w-full [@media(min-width:350px)]:w-auto cursor-pointer"
+              className="flex items-center font-bold justify-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition w-full sm:w-auto cursor-pointer"
             >
               <FiPlus size={20} />
               Add Task
             </button>
+              </div>
           </>
         )}
       </div>
 
-      {/* FILTER BAR */}
-      <div className="bg-white border border-gray-400 rounded-xl p-4 mb-6 shadow-sm">
+      {/* DESKTOP FILTER BAR */}
+      <div className="hidden lg:block bg-white border border-gray-400 rounded-xl p-4 mb-6 shadow-sm">
         {initialLoading ? (
-          <div className="flex flex-col lg:flex-row lg:items-center gap-4">
-            <Skeleton className="h-10 w-full lg:flex-1" />
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:flex lg:items-center gap-3 w-full lg:w-auto">
-              <Skeleton className="h-10 w-full lg:w-32" />
-              <Skeleton className="h-10 w-full lg:w-32" />
-              <Skeleton className="h-10 w-full lg:w-40" />
-              <Skeleton className="h-10 w-full lg:w-40" />
-              <Skeleton className="h-10 w-20 sm:col-span-2 md:col-span-4 lg:col-auto lg:ml-2 mx-auto lg:mx-0" />
+          <div className="flex flex-col gap-4">
+            <Skeleton className="h-10 w-full" />
+            <div className="flex gap-3">
+              <Skeleton className="h-10 flex-1" />
+              <Skeleton className="h-10 flex-1" />
+              <Skeleton className="h-10 flex-1" />
+              <Skeleton className="h-10 flex-1" />
+              <Skeleton className="h-10 flex-1" />
+              <Skeleton className="h-10 flex-1" />
             </div>
           </div>
         ) : (
-          <div className="flex flex-col lg:flex-row lg:items-center gap-4">
+          <div className="flex flex-col gap-4">
             {/* SEARCH */}
-            <div className="relative flex-1">
+            <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
                 🔍
               </span>
-
               <input
                 type="text"
-                placeholder="Search tasks..."
+                placeholder="Search tasks by title or description..."
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 px-3"
+                className="w-full pl-9 pr-3 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
 
             {/* FILTERS */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:flex lg:items-center gap-3 w-full lg:w-auto">
-              <select
-                value={priority}
-                onChange={(e) =>
-                  updateParams({ priority: e.target.value, page: 1 })
-                }
-                className="border cursor-pointer rounded-lg px-3 py-2 w-full lg:w-32 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">Priority</option>
-                <option value="low">Low</option>
-                <option value="medium">Medium</option>
-                <option value="high">High</option>
-              </select>
+              <FilterControls isMobile={false} />
+              
+              {/* Clear All Button for Desktop */}
+              {hasAnyFilter && (
+                <div className="flex justify-end">
+                  <button
+                    onClick={clearFilters}
+                    className="text-sm cursor-pointer text-red-600 hover:text-red-700 font-medium hover:underline flex items-center gap-1"
+                  >
+                    <FiX size={16} />
+                    Clear all filters
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
 
-              <select
-                value={status}
-                onChange={(e) =>
-                  updateParams({ status: e.target.value, page: 1 })
-                }
-                className="border cursor-pointer rounded-lg px-3 py-2 w-full lg:w-32 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">Status</option>
-                <option value="todo">Todo</option>
-                <option value="in-progress">In Progress</option>
-                <option value="done">Done</option>
-              </select>
-
-              <div className="w-full lg:w-40">
-                <CustomDatePicker
-                  value={deadlineFrom}
-                  onChange={(val) => updateParams({ deadlineFrom: val, page: 1 })}
-                  placeholder="From date"
+        {/* MOBILE FILTER DRAWER */}
+        {isFilterDrawerOpen && (
+          <>
+            <div 
+              className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+              onClick={() => setIsFilterDrawerOpen(false)}
+            />
+            <div className="fixed bottom-0 left-0 right-0 bg-white rounded-t-2xl z-50 lg:hidden animate-slide-up">
+              <div className="p-4 border-b">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-lg font-semibold">Filters</h3>
+                  <button
+                    onClick={() => setIsFilterDrawerOpen(false)}
+                    className="p-1 cursor-pointer hover:bg-gray-100 rounded-lg"
+                  >
+                    <FiX size={24} />
+                  </button>
+                </div>
+              </div>
+              <div className="p-4 max-h-[80vh] overflow-y-auto">
+                {/* Search in mobile drawer */}
+                <div className="relative mb-4">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                    🔍
+                  </span>
+                  <input
+                    type="text"
+                    placeholder="Search tasks..."
+                    value={searchInput}
+                    onChange={(e) => setSearchInput(e.target.value)}
+                    className="w-full pl-9 pr-3 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
-
-              <div className="w-full lg:w-40">
-                <CustomDatePicker
-                  value={deadlineTo}
-                  onChange={(val) => updateParams({ deadlineTo: val, page: 1 })}
-                  placeholder="To date"
-                />
+                
+                <FilterControls isMobile={true} />
               </div>
+            </div>
+          </>
+        )}
 
+        {/* Active Filters Display */}
+        {hasAnyFilter && (
+          <div className="mb-4 flex flex-wrap gap-2 items-center">
+            <span className="text-sm text-gray-600 font-medium">Active filters:</span>
+            {relationshipFilter !== "all" && (
+              <span className="inline-flex cursor-defautl items-center px-2 py-1 rounded-md text-xs font-medium bg-purple-100 text-purple-800">
+                {relationshipFilter === "createdByMe" ? "Created by me" : "Assigned to me"}
+                <button
+                  onClick={() => updateParams({ relationship: "all", page: 1 })}
+                  className="ml-1 cursor-pointer hover:text-purple-600 font-bold"
+                >
+                  ×
+                </button>
+              </span>
+            )}
+            {overdueFilter !== "all" && (
+              <span className="inline-flex cursor-default items-center px-2 py-1 rounded-md text-xs font-medium bg-red-100 text-red-800">
+                {overdueFilter === "overdue" ? "Overdue" : "Not overdue"}
+                <button
+                  onClick={() => updateParams({ overdue: "all", page: 1 })}
+                  className="ml-1 cursor-pointer hover:text-red-600 font-bold"
+                >
+                  ×
+                </button>
+              </span>
+            )}
+            {priority && (
+              <span className="inline-flex cursor-default items-center px-2 py-1 rounded-md text-xs font-medium bg-blue-100 text-blue-800">
+                Priority: {priority}
+                <button
+                  onClick={() => updateParams({ priority: "", page: 1 })}
+                  className="ml-1 cursor-pointer hover:text-blue-600 font-bold"
+                >
+                  ×
+                </button>
+              </span>
+            )}
+            {status && (
+              <span className="inline-flex cursor-default items-center px-2 py-1 rounded-md text-xs font-medium bg-green-100 text-green-800">
+                Status: {formatLabel(status)}
+                <button
+                  onClick={() => updateParams({ status: "", page: 1 })}
+                  className="ml-1 cursor-pointer hover:text-green-600 font-bold"
+                >
+                  ×
+                </button>
+              </span>
+            )}
+            {(deadlineFrom || deadlineTo) && (
+              <span className="inline-flex cursor-default items-center px-2 py-1 rounded-md text-xs font-medium bg-gray-100 text-gray-800">
+                Deadline: {deadlineFrom && `from ${formatDate(deadlineFrom)}`} {deadlineTo && `to ${formatDate(deadlineTo)}`}
+                <button
+                  onClick={() => updateParams({ deadlineFrom: "", deadlineTo: "", page: 1 })}
+                  className="ml-1 cursor-pointer hover:text-gray-600 font-bold"
+                >
+                  ×
+                </button>
+              </span>
+            )}
+            {search && (
+              <span className="inline-flex cursor-default items-center px-2 py-1 rounded-md text-xs font-medium bg-gray-100 text-gray-800">
+                Search: {search.length > 20 ? search.substring(0, 20) + "..." : search}
+                <button
+                  onClick={() => {
+                    setSearchInput("");
+                    updateParams({ search: "", page: 1 });
+                  }}
+                  className="ml-1 cursor-pointer hover:text-gray-600 font-bold"
+                >
+                  ×
+                </button>
+              </span>
+            )}
               <button
                 onClick={clearFilters}
-                className="sm:col-span-2 md:col-span-4 lg:col-auto text-base text-red-600 hover:text-red-700 font-medium hover:underline cursor-pointer text-center lg:text-left lg:ml-2"
+                className="text-xs cursor-pointer text-red-600 hover:text-red-700 font-medium ml-2"
               >
-                Clear
+                Clear all
               </button>
-            </div>
           </div>
         )}
-      </div>
 
       {/* DESKTOP TABLE */}
       <div className="hidden md:block bg-white border rounded-xl overflow-hidden">
@@ -374,123 +641,72 @@ useEffect(() => {
           <table className="w-full text-left">
             <thead className="bg-gray-50 border-b">
               <tr>
-                <th className="p-4 text-sm cursor-default font-semibold">
-                  Title
-                </th>
-                <th className="p-4 text-sm cursor-default font-semibold w-35">
-                  Priority
-                </th>
-                <th className="p-4 text-sm cursor-default font-semibold w-40">
-                  Status
-                </th>
-                <th className="p-4 text-sm cursor-default font-semibold">
-                  Deadline
-                </th>
-                  <th className="p-4 text-sm cursor-default font-semibold w-48">
-                    Relationship
-                </th>
-                <th className="p-4 text-sm cursor-default font-semibold">
-                  Actions
-                </th>
+                <th className="p-4 text-sm cursor-default font-semibold">Title</th>
+                <th className="p-4 text-sm cursor-default font-semibold">Priority</th>
+                <th className="p-4 text-sm cursor-default font-semibold">Status</th>
+                <th className="p-4 text-sm cursor-default font-semibold">Deadline</th>
+                  <th className="p-4 text-sm cursor-default font-semibold">Relationship</th>
+                <th className="p-4 text-sm cursor-default font-semibold">Actions</th>
               </tr>
             </thead>
-
             <tbody>
               {loading ? (
                 [...Array(5)].map((_, i) => (
                   <tr key={i} className="border-b last:border-b-0">
-                    <td className="p-4">
-                      <Skeleton className="h-5 w-3/4" />
-                    </td>
-                    <td className="p-4">
-                      <Skeleton className="h-8 w-20 rounded-full" />
-                    </td>
-                    <td className="p-4">
-                      <Skeleton className="h-8 w-24 rounded-full" />
-                    </td>
-                    <td className="p-4">
-                      <Skeleton className="h-5 w-24" />
-                    </td>
-                      <td className="p-4">
-                        <Skeleton className="h-5 w-28" />
-                    </td>
-                    <td className="p-4">
-                      <div className="flex gap-3">
-                        <Skeleton className="h-6 w-6" />
-                        <Skeleton className="h-6 w-6" />
-                      </div>
-                    </td>
+                    <td className="p-4"><Skeleton className="h-5 w-3/4" /></td>
+                    <td className="p-4"><Skeleton className="h-8 w-20 rounded-full" /></td>
+                    <td className="p-4"><Skeleton className="h-8 w-24 rounded-full" /></td>
+                    <td className="p-4"><Skeleton className="h-5 w-24" /></td>
+                      <td className="p-4"><Skeleton className="h-5 w-28" /></td>
+                    <td className="p-4"><div className="flex gap-3"><Skeleton className="h-6 w-6" /><Skeleton className="h-6 w-6" /></div></td>
                   </tr>
                 ))
-              ) : tasks.length === 0 ? (
+              ) : displayedTasks.length === 0 ? (
                 <tr>
-                  <td
-                    colSpan="6"
-                    className="text-center py-12 text-gray-500 text-sm"
-                  >
+                  <td colSpan="6" className="text-center py-12 text-gray-500 text-sm">
                     No tasks found
                   </td>
                 </tr>
               ) : (
-                tasks.map((task) => (
+                  displayedTasks.map((task) => (
                   <tr
                     key={task._id}
                     onClick={() => handleRowClick(task)}
-                    className={`border-b last:border-b-0 cursor-pointer hover:bg-gray-50 ${
-                      task.isOverdue ? "bg-red-100" : ""
+                    className={`border-b last:border-b-0 cursor-pointer hover:bg-gray-50 transition ${
+                      task.isOverdue && task.status !== "done" ? "bg-red-50" : ""
                     }`}
                   >
                     <td className="p-4 font-medium">{task.title}</td>
-
                     <td className="p-4">
-                      <span
-                        className={`inline-flex font-medium items-center whitespace-nowrap px-3 py-1 text-md rounded-full ${priorityColor(
-                          task.priority,
-                        )}`}
-                      >
+                      <span className={`inline-flex font-medium items-center whitespace-nowrap px-3 py-1 text-md rounded-full ${priorityColor(task.priority)}`}>
                         {formatLabel(task.priority)}
                       </span>
                     </td>
-
                     <td className="p-4">
-                      <span
-                        className={`px-3 py-1 text-md font-medium rounded-full ${statusColor(
-                          task.status,
-                        )}`}
-                      >
+                      <span className={`px-3 py-1 text-md text-nowrap font-medium rounded-full ${statusColor(task.status)}`}>
                         {formatLabel(task.status)}
                       </span>
                     </td>
-
-                    <td className="p-4 text-md font-medium text-gray-600">
+                    <td className="p-4 text-md font-medium">
+                        <span className={task.isOverdue && task.status !== "done" ? "text-red-600 font-bold" : "text-gray-600"}>
                       {formatDate(task.deadline)}
+                          {task.isOverdue && task.status !== "done" && " ⚠️"}
+                        </span>
                     </td>
-
                       <td className="p-4">
                         <div className="flex flex-wrap gap-2">
                           {getTaskBadges(task).map((badge, idx) => (
-                            <span
-                              key={idx}
-                              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${badge.color}`}
-                            >
+                            <span key={idx} className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${badge.color}`}>
                               {badge.text}
                             </span>
                           ))}
                         </div>
                     </td>
-
                     <td className="p-4 flex gap-3 text-xl">
-                      <button
-                        onClick={(e) => openEditModal(task, e)}
-                        className="text-blue-600 hover:text-blue-800 cursor-pointer"
-                      >
+                      <button onClick={(e) => openEditModal(task, e)} className="text-blue-600 hover:text-blue-800 cursor-pointer transition">
                         <FiEdit />
                       </button>
-
-                      <button
-                        onClick={(e) => handleDeleteClick(task._id, e)}
-                        className="text-red-600 hover:text-red-800 cursor-pointer"
-                      >
+                      <button onClick={(e) => handleDeleteClick(task._id, e)} className="text-red-600 hover:text-red-800 cursor-pointer transition">
                         <FiTrash2 />
                       </button>
                     </td>
@@ -509,61 +725,44 @@ useEffect(() => {
             <div key={i} className="border rounded-xl p-4 bg-white">
               <Skeleton className="h-6 w-3/4 mb-3" />
               <div className="grid grid-cols-2 gap-3 mb-3">
-                <div>
-                  <Skeleton className="h-4 w-16 mb-1" />
-                  <Skeleton className="h-8 w-20" />
-                </div>
-                <div>
-                  <Skeleton className="h-4 w-16 mb-1" />
-                  <Skeleton className="h-8 w-20" />
-                </div>
+                <div><Skeleton className="h-4 w-16 mb-1" /><Skeleton className="h-8 w-20" /></div>
+                <div><Skeleton className="h-4 w-16 mb-1" /><Skeleton className="h-8 w-20" /></div>
               </div>
               <div className="flex justify-between items-center mt-3">
                 <Skeleton className="h-5 w-32" />
-                <div className="flex gap-4">
-                  <Skeleton className="h-8 w-8" />
-                  <Skeleton className="h-8 w-8" />
-                </div>
+                <div className="flex gap-4"><Skeleton className="h-8 w-8" /><Skeleton className="h-8 w-8" /></div>
               </div>
             </div>
           ))
-        ) : tasks.length === 0 ? (
-          <div className="text-center py-12 text-gray-500 text-sm">
-            No tasks found
-          </div>
+        ) : displayedTasks.length === 0 ? (
+          <div className="text-center py-12 text-gray-500 text-sm">No tasks found</div>
         ) : (
-          tasks.map((task) => (
+            displayedTasks.map((task) => (
             <div
               key={task._id}
                 onClick={() => handleRowClick(task)}
-              className={`border cursor-pointer rounded-xl p-4 ${
-                task.isOverdue ? "bg-red-50" : "bg-white"
+              className={`border cursor-pointer rounded-xl p-4 transition ${
+                task.isOverdue && task.status !== "done" ? "bg-red-50 border-red-200" : "bg-white"
               }`}
             >
-              <h3 className="font-semibold text-gray-800 mb-3">{task.title}</h3>
+            <div className="flex justify-between items-start mb-3">
+              <h3 className="font-semibold text-gray-800 flex-1">{task.title}</h3>
+                  {task.isOverdue && task.status !== "done" && (
+                    <span className="text-red-600 text-xs font-bold ml-2">⚠️ OVERDUE</span>
+                  )}
+                </div>
 
               {/* Priority + Status */}
               <div className="grid grid-cols-2 gap-3 text-sm mb-3">
                 <div>
-                  <p className="text-gray-500 font-semibold text-sm mb-1">
-                    Priority
-                  </p>
-                  <span
-                    className={`inline-block font-medium px-2 py-1 text-sm rounded-md ${priorityColor(
-                      task.priority,
-                    )}`}
-                  >
+                  <p className="text-gray-500 font-semibold text-sm mb-1">Priority</p>
+                  <span className={`inline-block font-medium px-2 py-1 text-sm rounded-md ${priorityColor(task.priority)}`}>
                     {formatLabel(task.priority)}
                   </span>
                 </div>
-
                 <div>
-                  <p className="text-gray-500 font-semibold text-sm mb-1">
-                    Status
-                  </p>
-                  <span
-                    className={`inline-block font-medium px-2 py-1 text-sm rounded-md ${statusColor(task.status)}`}
-                  >
+                  <p className="text-gray-500 font-semibold text-sm mb-1">Status</p>
+                  <span className={`inline-block font-medium px-2 py-1 text-sm rounded-md ${statusColor(task.status)}`}>
                     {formatLabel(task.status)}
                   </span>
                 </div>
@@ -572,37 +771,25 @@ useEffect(() => {
                 {/* Badges for mobile */}
                 <div className="flex flex-wrap gap-2 mb-3">
                   {getTaskBadges(task).map((badge, idx) => (
-                    <span
-                      key={idx}
-                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${badge.color}`}
-                    >
+                    <span key={idx} className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${badge.color}`}>
                       {badge.text}
                     </span>
                   ))}
                 </div>
-
               {/* Deadline and Actions */}
               <div className="flex items-center justify-between mt-3">
                 <p className="text-sm text-gray-600 flex gap-2">
                   <span className="font-semibold text-gray-500">Deadline:</span>
-                  <span className="font-medium">
+                  <span className={`font-medium ${task.isOverdue && task.status !== "done" ? "text-red-600 font-bold" : ""}`}>
                     {formatDate(task.deadline)}
                   </span>
                 </p>
-
                 {/* Actions */}
                 <div className="flex gap-4 text-xl">
-                  <button
-                    onClick={(e) => openEditModal(task, e)}
-                    className="text-blue-600 hover:text-blue-800 cursor-pointer"
-                  >
+                  <button onClick={(e) => openEditModal(task, e)} className="text-blue-600 hover:text-blue-800 cursor-pointer">
                     <FiEdit size={24} />
                   </button>
-
-                  <button
-                    onClick={(e) => handleDeleteClick(task._id, e)}
-                    className="text-red-600 hover:text-red-800 cursor-pointer"
-                  >
+                  <button onClick={(e) => handleDeleteClick(task._id, e)} className="text-red-600 hover:text-red-800 cursor-pointer">
                     <FiTrash2 size={24} />
                   </button>
                 </div>
@@ -612,7 +799,8 @@ useEffect(() => {
         )}
       </div>
 
-      {/* PAGINATION */}
+      {/* PAGINATION - Hide when client-side filters are active */}
+        {!hasClientSideFilters && !loading && displayedTasks.length > 0 && (
       <div className="flex justify-between items-center mt-6">
         <button
           onClick={() => updateParams({ page: Math.max(page - 1, 1) })}
@@ -621,11 +809,9 @@ useEffect(() => {
         >
           Previous
         </button>
-
         <span className="text-sm font-medium cursor-default text-gray-600">
           Page {page} of {totalPages}
         </span>
-
         <button
           onClick={() => updateParams({ page: Math.min(page + 1, totalPages) })}
           disabled={page === totalPages}
@@ -634,6 +820,14 @@ useEffect(() => {
           Next
         </button>
       </div>
+        )}
+        
+        {/* Show message when client-side filters are active */}
+        {hasClientSideFilters && !loading && displayedTasks.length > 0 && (
+          <div className="text-center text-sm text-gray-500 mt-6">
+            Showing {displayCount} of {totalCount} total tasks (filters applied)
+          </div>
+        )}
 
       {/* Modals */}
       <TaskModal
@@ -659,6 +853,20 @@ useEffect(() => {
         users={users}
       />
     </div>
+
+      <style jsx>{`
+        @keyframes slide-up {
+          from {
+            transform: translateY(100%);
+          }
+          to {
+            transform: translateY(0);
+          }
+        }
+        .animate-slide-up {
+          animation: slide-up 0.3s ease-out;
+        }
+      `}</style>
   </>
   );
 };
