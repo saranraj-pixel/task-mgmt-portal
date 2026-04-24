@@ -25,7 +25,16 @@ const TaskModal = ({ isOpen, onClose, task, onSave, users = [], currentUser }) =
     control,
     setError, 
     formState: { errors },
-  } = useForm();
+  } = useForm({
+    defaultValues: {
+      title: "",
+      description: "",
+      priority: "medium",
+      status: "todo",
+      deadline: "",
+      assignedTo: "",
+    }
+  });
 
   // Check permissions when modal opens with a task
   useEffect(() => {
@@ -54,8 +63,11 @@ const TaskModal = ({ isOpen, onClose, task, onSave, users = [], currentUser }) =
     }
   }, [task, currentUser, isEdit]);
 
+  // Reset form when modal opens/closes or task changes
   useEffect(() => {
+    if (isOpen) {
     if (task) {
+        // Edit mode - populate with task data
       reset({
         title: task.title,
         description: task.description,
@@ -65,6 +77,7 @@ const TaskModal = ({ isOpen, onClose, task, onSave, users = [], currentUser }) =
         assignedTo: task.assignedTo?._id || task.assignedTo || "",
       });
     } else {
+        // Create mode - reset to empty form
       reset({
         title: "",
         description: "",
@@ -75,7 +88,28 @@ const TaskModal = ({ isOpen, onClose, task, onSave, users = [], currentUser }) =
       });
     }
     setApiErrors({});
-  }, [task, reset]);
+    }
+  }, [task, reset, isOpen]); 
+
+  // Clean up when modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      // Small delay to ensure modal is closed before resetting
+      const timer = setTimeout(() => {
+        reset({
+          title: "",
+          description: "",
+          priority: "medium",
+          status: "todo",
+          deadline: "",
+          assignedTo: "",
+        });
+        setApiErrors({});
+      }, 100);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen, reset]);
 
   const onSubmit = async (data) => {
     setIsLoading(true);
@@ -101,6 +135,16 @@ const TaskModal = ({ isOpen, onClose, task, onSave, users = [], currentUser }) =
       } else {
         await createTask(data);
         toast.success("Task created successfully");
+        
+        // Reset form after successful creation for next task
+        reset({
+          title: "",
+          description: "",
+          priority: "medium",
+          status: "todo",
+          deadline: "",
+          assignedTo: "",
+        });
       }
 
       onSave();
@@ -146,6 +190,20 @@ const TaskModal = ({ isOpen, onClose, task, onSave, users = [], currentUser }) =
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Handle modal close with reset
+  const handleClose = () => {
+    reset({
+      title: "",
+      description: "",
+      priority: "medium",
+      status: "todo",
+      deadline: "",
+      assignedTo: "",
+    });
+    setApiErrors({});
+    onClose();
   };
 
   if (!isOpen) return null;
@@ -383,7 +441,7 @@ const TaskModal = ({ isOpen, onClose, task, onSave, users = [], currentUser }) =
           <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-3 pt-2">
             <button
               type="button"
-              onClick={onClose}
+              onClick={handleClose}
               disabled={isLoading}
               className="w-full sm:w-auto px-4 py-2 border hover:bg-gray-100 rounded-lg cursor-pointer disabled:opacity-50 transition"
             >
