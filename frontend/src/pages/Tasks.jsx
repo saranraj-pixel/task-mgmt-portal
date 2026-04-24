@@ -203,6 +203,10 @@ const Tasks = () => {
   // Check if relationship filter is active (client-side)
   const hasClientSideFilters = relationshipFilter !== "all";
   
+    const shouldShowPagination = hasClientSideFilters
+  ? displayedTasks.length > 10   // client-side case
+  : totalCount > 10;            // server-side case
+
   // Check if any filter is active
   const hasAnyFilter = priority || status || deadlineFrom || deadlineTo || search || relationshipFilter !== "all" || overdueFilter !== "all";
 
@@ -853,7 +857,7 @@ const Tasks = () => {
       </div>
 
       {/* PAGINATION */}
-      {!loading && displayedTasks.length > 0 && totalPages > 1 && (
+      {!loading && displayedTasks.length > 0 && shouldShowPagination && (
       <div className="flex justify-between items-center mt-6">
         <button
           onClick={() => updateParams({ page: Math.max(page - 1, 1) })}
