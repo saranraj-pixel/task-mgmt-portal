@@ -14,12 +14,16 @@ const TaskModal = ({ isOpen, onClose, task, onSave, users = [], currentUser }) =
   const [isCreator, setIsCreator] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isAssignedOnly, setIsAssignedOnly] = useState(false);
+  
+  // API validation errors
+  const [apiErrors, setApiErrors] = useState({});
 
   const {
     register,
     handleSubmit,
     reset,
     control,
+    setError, 
     formState: { errors },
   } = useForm();
 
@@ -70,10 +74,13 @@ const TaskModal = ({ isOpen, onClose, task, onSave, users = [], currentUser }) =
         assignedTo: "",
       });
     }
+    setApiErrors({});
   }, [task, reset]);
 
   const onSubmit = async (data) => {
     setIsLoading(true);
+    setApiErrors({});
+    
     try {
       if (isEdit) {
         // 🔑 KEY FIX: Only send allowed fields based on permissions
@@ -100,8 +107,36 @@ const TaskModal = ({ isOpen, onClose, task, onSave, users = [], currentUser }) =
       onClose();
     } catch (error) {
       console.error("Update error:", error);
-      const errorMessage = error.response?.data?.message || "Something went wrong";
-      toast.error(errorMessage);
+      
+      // Handle validation errors from API
+      if (error.response?.data?.errors && Array.isArray(error.response.data.errors)) {
+        // Process field-specific errors
+        const validationErrors = error.response.data.errors;
+        
+        validationErrors.forEach((err) => {
+          if (err.type === "field" && err.path) {
+            // Set error for specific field using react-hook-form
+            setError(err.path, {
+              type: "manual",
+              message: err.msg
+            });
+            
+            // Also store in apiErrors state for any custom display needs
+            setApiErrors(prev => ({
+              ...prev,
+              [err.path]: err.msg
+            }));
+          }
+        });
+        
+        // Show a single toast with validation error summary
+        const errorMessages = validationErrors.map(err => `${err.path}: ${err.msg}`).join(', ');
+        toast.error(`Validation Error: ${errorMessages}`);
+      } else {
+        // Handle other types of errors
+        const errorMessage = error.response?.data?.message || "Something went wrong";
+        toast.error(errorMessage);
+      }
       
       logError(error, {
         action: isEdit ? "UPDATE_TASK" : "CREATE_TASK",
@@ -162,11 +197,13 @@ const TaskModal = ({ isOpen, onClose, task, onSave, users = [], currentUser }) =
               disabled={isEdit && !canEditAllFields}
               className={`w-full border rounded-lg px-3 py-2 text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-blue-500
                 ${(isEdit && !canEditAllFields) ? "bg-gray-100 cursor-not-allowed" : ""}
+                ${(errors.title || apiErrors.title) ? "border-red-500" : "border-gray-300"}
               `}
             />
-            {errors.title && (
+            {/* Show both react-hook-form errors and API errors */}
+            {(errors.title || apiErrors.title) && (
               <p className="text-red-500 text-xs sm:text-sm mt-1">
-                {errors.title.message}
+                {errors.title?.message || apiErrors.title}
               </p>
             )}
           </div>
@@ -192,11 +229,12 @@ const TaskModal = ({ isOpen, onClose, task, onSave, users = [], currentUser }) =
               disabled={isEdit && !canEditAllFields}
               className={`w-full border rounded-lg px-3 py-2 text-sm sm:text-base resize-none focus:outline-none focus:ring-2 focus:ring-blue-500
                 ${(isEdit && !canEditAllFields) ? "bg-gray-100 cursor-not-allowed" : ""}
+                ${(errors.description || apiErrors.description) ? "border-red-500" : "border-gray-300"}
               `}
             />
-            {errors.description && (
+            {(errors.description || apiErrors.description) && (
               <p className="text-red-500 text-xs sm:text-sm">
-                {errors.description.message}
+                {errors.description?.message || apiErrors.description}
               </p>
             )}
           </div>
@@ -211,12 +249,18 @@ const TaskModal = ({ isOpen, onClose, task, onSave, users = [], currentUser }) =
                 disabled={isEdit && !canEditAllFields}
                 className={`w-full border rounded-lg px-3 py-2 text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-blue-500
                   ${(isEdit && !canEditAllFields) ? "bg-gray-100 cursor-not-allowed" : ""}
+                  ${(errors.priority || apiErrors.priority) ? "border-red-500" : "border-gray-300"}
                 `}
               >
                 <option value="low">Low</option>
                 <option value="medium">Medium</option>
                 <option value="high">High</option>
               </select>
+              {(errors.priority || apiErrors.priority) && (
+                <p className="text-red-500 text-xs sm:text-sm mt-1">
+                  {errors.priority?.message || apiErrors.priority}
+                </p>
+              )}
             </div>
 
             {/* STATUS - Always enabled for edit mode, but disabled for create if needed */}
@@ -225,12 +269,19 @@ const TaskModal = ({ isOpen, onClose, task, onSave, users = [], currentUser }) =
               <select
                 {...register("status")}
                 disabled={false} // Status is always editable for assigned users
-                className="w-full border rounded-lg px-3 py-2 text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className={`w-full border rounded-lg px-3 py-2 text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-blue-500
+                  ${(errors.status || apiErrors.status) ? "border-red-500" : "border-gray-300"}
+                `}
               >
                 <option value="todo">Todo</option>
                 <option value="in-progress">In Progress</option>
                 <option value="done">Done</option>
               </select>
+              {(errors.status || apiErrors.status) && (
+                <p className="text-red-500 text-xs sm:text-sm mt-1">
+                  {errors.status?.message || apiErrors.status}
+                </p>
+              )}
             </div>
           </div>
 
@@ -242,6 +293,7 @@ const TaskModal = ({ isOpen, onClose, task, onSave, users = [], currentUser }) =
               disabled={isEdit && !canEditAllFields}
               className={`w-full border rounded-lg px-3 py-2 text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-blue-500
                 ${(isEdit && !canEditAllFields) ? "bg-gray-100 cursor-not-allowed" : ""}
+                ${(errors.assignedTo || apiErrors.assignedTo) ? "border-red-500" : "border-gray-300"}
               `}
             >
               <option value="">Unassigned</option>
@@ -251,6 +303,11 @@ const TaskModal = ({ isOpen, onClose, task, onSave, users = [], currentUser }) =
                 </option>
               ))}
             </select>
+            {(errors.assignedTo || apiErrors.assignedTo) && (
+              <p className="text-red-500 text-xs sm:text-sm mt-1">
+                {errors.assignedTo?.message || apiErrors.assignedTo}
+              </p>
+            )}
           </div>
 
           {/* DEADLINE - Completely disabled for assigned users */}
@@ -279,7 +336,7 @@ const TaskModal = ({ isOpen, onClose, task, onSave, users = [], currentUser }) =
                     (isEdit && !canEditAllFields) 
                       ? "bg-gray-100 cursor-not-allowed opacity-60 pointer-events-none" 
                       : ""
-                  }`}
+                  } ${(errors.deadline || apiErrors.deadline) ? "border-red-500" : ""}`}
                   minDate={new Date()}
                   disabled={isEdit && !canEditAllFields}
                   // Additional props to completely disable the date picker
@@ -300,10 +357,25 @@ const TaskModal = ({ isOpen, onClose, task, onSave, users = [], currentUser }) =
                 />
               )}
             />
-            {errors.deadline && (
+            {/* Show both client-side and API validation errors for deadline */}
+            {(errors.deadline || apiErrors.deadline) && (
               <p className="text-red-500 text-xs sm:text-sm mt-1">
-                {errors.deadline.message}
+                {errors.deadline?.message || apiErrors.deadline}
               </p>
+            )}
+            
+            {/* Optional: Show a summary of all API errors */}
+            {Object.keys(apiErrors).length > 0 && (
+              <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded-md">
+                <p className="text-red-600 text-xs font-semibold">Validation Errors:</p>
+                <ul className="list-disc list-inside text-red-500 text-xs mt-1">
+                  {Object.entries(apiErrors).map(([field, message]) => (
+                    <li key={field}>
+                      <span className="font-medium">{field}:</span> {message}
+                    </li>
+                  ))}
+                </ul>
+              </div>
             )}
           </div>
 

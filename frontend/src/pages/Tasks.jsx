@@ -230,6 +230,7 @@ const Tasks = () => {
     setConfirmOpen(true);
   };
 
+  // Delete handler - Updated to show actual API errors
   const handleConfirmDelete = async () => {
     try {
       await deleteTask(deleteId);
@@ -237,7 +238,40 @@ const Tasks = () => {
       toast.success("Task deleted successfully");
       setConfirmOpen(false);
     } catch (error) {
-      toast.error("Failed to delete task. You can only delete your own task.",error);
+    console.error("Delete error:", error);
+    
+    // Handle validation errors from API
+    if (error.response?.data?.errors && Array.isArray(error.response.data.errors)) {
+      // Process field-specific errors
+      const validationErrors = error.response.data.errors;
+      
+      // Show each error message
+      validationErrors.forEach((err) => {
+        if (err.type === "field" && err.path) {
+          toast.error(`${err.path}: ${err.msg}`);
+        } else {
+          toast.error(err.msg || "Validation error occurred");
+        }
+      });
+      
+      // Also show the main message if needed
+      if (error.response.data.message) {
+        toast.error(error.response.data.message);
+      }
+    } 
+    // Handle other types of errors
+    else if (error.response?.data?.message) {
+      // Show the actual API error message
+      toast.error(error.response.data.message);
+    } 
+    else if (error.message) {
+      toast.error(error.message);
+    }
+    else {
+      toast.error("Failed to delete task");
+    }
+    
+    setConfirmOpen(false);
     }
   };
 

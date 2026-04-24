@@ -47,7 +47,7 @@ const AdminTasks = () => {
         setCurrentUser(currentUserData);
       } catch (err) {
         logError(err, { action: "ADMIN_TASKS_LOAD_FAILED" });
-        toast.error("Failed to load tasks");
+        toast.error(err.response?.data?.message || err.message || "Failed to load tasks");
       } finally {
         setLoading(false);
       }
@@ -121,16 +121,7 @@ const AdminTasks = () => {
     } catch (err) {
       logError(err, { action: "DELETE_TASK_FAILED", taskId: taskToDelete._id });
       
-      // Handle different error responses with toast messages
-      if (err.response?.status === 403) {
-        toast.error("You don't have permission to delete this task");
-      } else if (err.response?.status === 404) {
-        toast.error("Task not found");
-        // Refresh tasks if task doesn't exist
-        refreshTasks();
-      } else {
-        toast.error(err.response?.data?.message || "Failed to delete task. Please try again.");
-      }
+      toast.error(err.response?.data?.message || err.message || "Failed to delete task. Please try again.");
     } finally {
       setDeletingTaskId(null);
     }
@@ -143,7 +134,7 @@ const AdminTasks = () => {
       setTasks(taskRes?.tasks || []);
     } catch (err) {
       logError(err, { action: "REFRESH_TASKS_FAILED" });
-      toast.error("Failed to refresh tasks");
+      toast.error(err.response?.data?.message || err.message || "Failed to refresh tasks");
     }
   };
 
@@ -169,7 +160,7 @@ const AdminTasks = () => {
       toast.success("Task assigned successfully");
     } catch (err) {
       logError(err, { action: "ASSIGN_USER_FAILED" });
-      toast.error("Failed to assign task");
+      toast.error(err.response?.data?.message || err.message || "Failed to assign task");
     }
   };
 

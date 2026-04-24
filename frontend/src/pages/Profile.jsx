@@ -16,12 +16,14 @@ const Profile = () => {
   const [editMode, setEditMode] = useState(false);
   const [loading, setLoading] = useState(true);
   const [passwordLoading, setPasswordLoading] = useState(false);
+  const [profileLoading, setProfileLoading] = useState(false);
 
   const {
     register,
     handleSubmit,
     formState: { errors },
     reset,
+    setError: setProfileError,
   } = useForm();
 
   const {
@@ -29,20 +31,44 @@ const Profile = () => {
     handleSubmit: handlePasswordSubmit,
     formState: { errors: passwordErrors },
     reset: resetPassword,
-    watch,
+    setError: setPasswordError,
   } = useForm();
+
+  // Handle API validation errors - simple and clean
+  const handleApiValidationErrors = (error, setErrorFn) => {
+    const errors = error.response?.data?.errors;
+    
+    if (errors && Array.isArray(errors)) {
+      // Group errors by field (only show first error per field for cleaner UI)
+      const fieldErrors = {};
+      errors.forEach((err) => {
+        if (!fieldErrors[err.path]) {
+          fieldErrors[err.path] = err.msg;
+          setErrorFn(err.path, {
+            type: err.type,
+            message: err.msg,
+          });
+        }
+      });
+      return true;
+    }
+    
+    if (error.response?.data?.message) {
+      toast.error(error.response.data.message);
+      return true;
+    }
+    
+    return false;
+  };
 
   // Fetch profile
   const fetchProfile = useCallback(async () => {
     try {
       const res = await getProfile();
       setUser(res.data);
-
-      reset({
-        name: res.data.name,
-      });
+      reset({ name: res.data.name });
     } catch (error) {
-      toast.error("Failed to load profile", error);
+      toast.error(error.response?.data?.message || "Failed to load profile");
     } finally {
       setLoading(false);
     }
@@ -52,37 +78,36 @@ const Profile = () => {
     fetchProfile();
   }, [fetchProfile]);
 
-  // Update profile
+  // Update profile - let backend validate
   const onProfileUpdate = async (data) => {
     try {
+      setProfileLoading(true);
       const res = await updateProfile({ name: data.name });
-
       setUser(res.data);
       setEditMode(false);
-
       toast.success("Profile updated successfully");
     } catch (error) {
-      toast.error(error.response?.data?.message || "Update failed");
+      const handled = handleApiValidationErrors(error, setProfileError);
+      if (!handled) {
+        toast.error(error.response?.data?.message || "Update failed");
+      }
+    } finally {
+      setProfileLoading(false);
     }
   };
 
   // Change password
   const onPasswordChange = async (data) => {
-    if (data.newPassword !== data.confirmPassword) {
-      toast.error("Passwords do not match");
-      return;
-    }
-
     try {
       setPasswordLoading(true);
-
       await changePassword(data);
-
       toast.success("Password updated successfully");
-
       resetPassword();
     } catch (error) {
-      toast.error(error.response?.data?.message || "Password change failed");
+      const handled = handleApiValidationErrors(error, setPasswordError);
+      if (!handled) {
+        toast.error(error.response?.data?.message || "Password change failed");
+      }
     } finally {
       setPasswordLoading(false);
     }
@@ -100,7 +125,6 @@ const Profile = () => {
             <Skeleton className="h-3 w-1/4 bg-gray-300" />
           </div>
         </div>
-
         {/* Security Section Skeleton */}
         <div className="bg-white shadow rounded-xl p-6 mt-10 space-y-6">
           <Skeleton className="h-6 w-40 bg-gray-200" />
@@ -132,9 +156,10 @@ const Profile = () => {
         <title> Profile | Task Manager</title>
         <meta
           name="description"
-          content="Overview of your profile page you can edit name and change password none editable email "
+          content="Overview of your profile page you can edit name and change password"
         />
       </Helmet>
+      
     <div className="max-w-4xl mx-auto px-4 py-5 space-y-5">
       {/* Profile Header */}
       <div className="bg-linear-to-r from-blue-600 to-indigo-600 rounded-2xl shadow-lg p-4 sm:p-6 text-white flex items-center gap-3 sm:gap-6 flex-wrap sm:flex-nowrap">
@@ -147,7 +172,6 @@ const Profile = () => {
         <div className="flex-1 min-w-0">
           <h2 className="text-base sm:text-xl mb-3 font-semibold flex items-center gap-2 sm:gap-3 flex-wrap">
             {user?.name}
-
             {!editMode && (
               <button
                 onClick={() => setEditMode(true)}
@@ -157,30 +181,21 @@ const Profile = () => {
               </button>
             )}
           </h2>
-
           <p className="text-xs sm:text-sm opacity-90 flex items-center gap-1 break-all">
             {user?.email} <FiLock size={14} />
           </p>
-
-          <p className="text-xs opacity-80 mt-1 flex gap-1 flex-wrap">
-            Member since
-            <span>
-              {new Date(user?.createdAt).toLocaleDateString("en-US", {
+          <p className="text-xs opacity-80 mt-1">
+            Member since {new Date(user?.createdAt).toLocaleDateString("en-US", {
                 year: "numeric",
                 month: "short",
               })}
-            </span>
           </p>
         </div>
       </div>
 
       {/* Edit Profile */}
       {editMode && (
-        <div>
-          <form
-            onSubmit={handleSubmit(onProfileUpdate)}
-            className="flex flex-col gap-3"
-          >
+          <form onSubmit={handleSubmit(onProfileUpdate)} className="flex flex-col gap-3">
             <div className="flex-1 mt-5">
               <FormInput
                 label="Name"
@@ -191,32 +206,30 @@ const Profile = () => {
                 error={errors.name}
               />
             </div>
-
-            <div className="flex gap-2 justify-end items-end">
-              <button className="bg-blue-600 hover:bg-blue-700 text-white font-bold cursor-pointer px-5 py-2 rounded-md">
-                Save
+            <div className="flex gap-2 justify-end">
+              <button
+                type="submit"
+                disabled={profileLoading}
+                className="bg-blue-600 hover:bg-blue-700 text-white font-bold cursor-pointer px-5 py-2 rounded-md disabled:opacity-50"
+              >
+                {profileLoading ? "Saving..." : "Save"}
               </button>
-
               <button
                 type="button"
                 onClick={() => setEditMode(false)}
-                className="border px-5 py-2 rounded-md cursor-pointer"
+                className="border px-5 py-2 rounded-md cursor-pointer hover:bg-gray-50"
               >
                 Cancel
               </button>
             </div>
           </form>
-        </div>
       )}
 
       {/* Password Section */}
       <div className="mt-10">
         <h3 className="text-lg font-semibold mb-6">Security Settings</h3>
-
-        <form
-          onSubmit={handlePasswordSubmit(onPasswordChange)}
-          className="grid md:grid-cols-2 gap-4"
-        >
+          
+        <form onSubmit={handlePasswordSubmit(onPasswordChange)} className="grid md:grid-cols-2 gap-4">
           <FormInput
             label="Old Password"
             type="password"
@@ -233,10 +246,6 @@ const Profile = () => {
             isPassword
             register={registerPassword("newPassword", {
               required: "New password is required",
-              minLength: {
-                value: 6,
-                message: "Password must be at least 6 characters",
-              },
             })}
             error={passwordErrors.newPassword}
           />
@@ -247,16 +256,15 @@ const Profile = () => {
             isPassword
             register={registerPassword("confirmPassword", {
               required: "Confirm password is required",
-              validate: (value) =>
-                value === watch("newPassword") || "Passwords do not match",
             })}
             error={passwordErrors.confirmPassword}
           />
 
           <div className="md:col-span-2 flex justify-end pt-3">
             <button
+              type="submit"
               disabled={passwordLoading}
-              className="bg-green-500 hover:bg-green-600 text-white font-bold cursor-pointer px-4 py-3 rounded-md shadow"
+              className="bg-green-500 hover:bg-green-600 text-white font-bold cursor-pointer px-4 py-3 rounded-md shadow disabled:opacity-50"
             >
               {passwordLoading ? "Updating..." : "Update Password"}
             </button>
@@ -265,7 +273,6 @@ const Profile = () => {
       </div>
     </div>
   </>
-
   );
 };
 

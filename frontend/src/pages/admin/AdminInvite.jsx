@@ -23,7 +23,15 @@ const AdminInvite = () => {
       setSent(true);
       setEmail("");
     } catch (err) {
-      toast.error(err?.response?.data?.message || "Failed to send invite");
+      // Display exact API error message - no custom fallback
+      const apiErrorMessage = err?.response?.data?.message;
+      
+      if (apiErrorMessage) {
+        toast.error(apiErrorMessage);
+      } else {
+        // Only show generic error if API didn't return any message
+        toast.error("Server error occurred");
+      }
     } finally {
       setLoading(false);
     }
