@@ -65,7 +65,6 @@ exports.createTask = async (req, res) => {
 // @desc    Get All Tasks (User Specific)
 // @route   GET /api/tasks
 // @access  Private
-// In your getAllTasks controller
 exports.getAllTasks = async (req, res) => {
   try {
     const page = Number(req.query.page) || 1;
@@ -80,6 +79,7 @@ exports.getAllTasks = async (req, res) => {
       search,
       sortBy = "createdAt",
       order = "desc",
+      overdue, 
     } = req.query;
 
     const userId = req.user.userId;
@@ -109,16 +109,19 @@ exports.getAllTasks = async (req, res) => {
       if (deadlineTo) filter.deadline.$lte = new Date(deadlineTo);
     }
 
+    // overdue filter
+    if (overdue === "overdue") {
+      filter.deadline = { ...filter.deadline, $lt: new Date() };
+      filter.status = { $ne: "done" }; // Only show overdue if status is not done
+    } else if (overdue === "notOverdue") {
+      filter.$or = [
+        { deadline: { $gte: new Date() } },
+        { status: "done" }
+      ];
+    }
+
     if (search) {
       filter.$and = [
-        // role === "admin"
-        //   ? {}
-        //   : {
-        //       $or: [
-        //         { createdBy: userId },
-        //         { assignedTo: userId },
-        //       ],
-        //     },
         {
           $or: [
             { title: { $regex: search, $options: "i" } },
@@ -150,6 +153,8 @@ exports.getAllTasks = async (req, res) => {
         isCreatedByMe: createdById === userId,
         isAssignedToMe: assignedToId === userId,
       };
+      
+      taskObj.isOverdue = new Date(taskObj.deadline) < new Date() && taskObj.status !== "done";
       
       return taskObj;
     });
