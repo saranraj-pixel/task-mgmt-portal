@@ -20,6 +20,8 @@ const AdminTasks = () => {
   const [openModal, setOpenModal] = useState(false);
   const [selectedTask, setSelectedTask] = useState(null);
 
+  const [overdueFilter, setOverdueFilter] = useState("all");
+
   // State for Task Details Modal
   const [selectedTaskForDetails, setSelectedTaskForDetails] = useState(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
@@ -270,7 +272,14 @@ const AdminTasks = () => {
       }
     }
     
-    return statusMatch && priorityMatch && relationshipMatch;
+    let overdueMatch = true;
+    if (overdueFilter === "overdue") {
+      overdueMatch = t.isOverdue === true;
+    } else if (overdueFilter === "not_overdue") {
+      overdueMatch = !t.isOverdue;
+    }
+
+    return statusMatch && priorityMatch && relationshipMatch && overdueMatch;
   });
 
   const totalTasks = tasks.length;
@@ -368,7 +377,7 @@ const AdminTasks = () => {
         <div className="flex flex-col gap-3">
           <h2 className="text-sm font-semibold text-gray-700">Filter Tasks</h2>
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             {/* STATUS DROPDOWN */}
             <select
               value={filter}
@@ -403,6 +412,17 @@ const AdminTasks = () => {
               <option value="created_by_me">✨ Created by me</option>
               <option value="assigned_to_me">📋 Assigned to me</option>
               <option value="others">👥 Other Tasks</option>
+            </select>
+
+            {/* OVERDUE FILTER */}
+            <select
+              value={overdueFilter}
+              onChange={(e) => setOverdueFilter(e.target.value)}
+              className="border px-3 py-2 rounded-lg text-sm bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="all">All Deadlines</option>
+              <option value="overdue">🔴 Overdue</option>
+              <option value="not_overdue">🟢 Not Overdue</option>
             </select>
           </div>
         </div>
